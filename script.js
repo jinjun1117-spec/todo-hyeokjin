@@ -4,6 +4,11 @@ const input = document.getElementById('todo-input');
 const addButton = document.getElementById('add-button');
 const dueInput = document.getElementById('due-input');
 const importantToggle = document.getElementById('important-toggle');
+const searchInput = document.getElementById('search-input');
+const sortSelect = document.getElementById('sort-select');
+const progress = document.getElementById('progress');
+const progressText = document.getElementById('progress-text');
+const progressFill = document.getElementById('progress-fill');
 const filterButtons = document.querySelectorAll('#filters button');
 const list = document.getElementById('todo-list');
 const emptyMessage = document.getElementById('empty-message');
@@ -19,6 +24,8 @@ const EMPTY_TEXT = {
 
 let todos = load();
 let filter = 'all';
+let query = '';
+let sortBy = 'added';
 let newImportant = false;
 let editingId = null;
 
@@ -240,12 +247,28 @@ function makeEditItem(todo) {
   return li;
 }
 
+function sortTodos(items) {
+  const sorted = items.slice();
+  if (sortBy === 'due') {
+    sorted.sort(function (a, b) {
+      if (!a.due && !b.due) return 0;
+      if (!a.due) return 1;
+      if (!b.due) return -1;
+      return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+    });
+  } else if (sortBy === 'important') {
+    sorted.sort(function (a, b) { return Number(b.important) - Number(a.important); });
+  }
+  return sorted;
+}
+
 function render() {
-  const shown = todos.filter(function (t) {
-    if (filter === 'active') return !t.done;
-    if (filter === 'done') return t.done;
-    return true;
-  });
+  const word = query.trim().toLowerCase();
+  const shown = sortTodos(todos.filter(function (t) {
+    if (filter === 'active' && t.done) return false;
+    if (filter === 'done' && !t.done) return false;
+    return !word || t.text.toLowerCase().includes(word);
+  }));
 
   list.replaceChildren(...shown.map(function (t) {
     return t.id === editingId ? makeEditItem(t) : makeItem(t);
@@ -257,10 +280,16 @@ function render() {
     editField.setSelectionRange(editField.value.length, editField.value.length);
   }
 
-  emptyMessage.textContent = EMPTY_TEXT[filter];
+  emptyMessage.textContent = word && todos.length > 0 ? '검색 결과가 없어요' : EMPTY_TEXT[filter];
   emptyMessage.hidden = shown.length > 0;
 
   const remaining = todos.filter(function (t) { return !t.done; }).length;
+  const finished = todos.length - remaining;
+  progress.hidden = todos.length === 0;
+  progressText.textContent = todos.length > 0 && remaining === 0
+    ? '모두 끝냈어요! 🎉'
+    : finished + ' / ' + todos.length + ' 완료';
+  progressFill.style.width = (todos.length ? Math.round(finished / todos.length * 100) : 0) + '%';
   count.textContent = '남은 할 일 ' + remaining + '개';
   clearButton.disabled = remaining === todos.length;
   footer.hidden = todos.length === 0;
@@ -275,6 +304,14 @@ input.addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && !e.isComposing) addTodo();
 });
 importantToggle.addEventListener('click', function () { setNewImportant(!newImportant); });
+searchInput.addEventListener('input', function () {
+  query = searchInput.value;
+  render();
+});
+sortSelect.addEventListener('change', function () {
+  sortBy = sortSelect.value;
+  render();
+});
 filterButtons.forEach(function (b) {
   b.addEventListener('click', function () {
     filter = b.dataset.filter;

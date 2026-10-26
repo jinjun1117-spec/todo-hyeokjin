@@ -9,6 +9,11 @@
 <body>
   <h1>할 일 목록</h1>
 
+  <div id="progress" hidden>
+    <p id="progress-text">0 / 0 완료</p>
+    <div id="progress-track"><div id="progress-fill"></div></div>
+  </div>
+
   <div id="add-box">
     <div class="row">
       <input type="text" id="todo-input" placeholder="할 일을 적어 보세요" maxlength="100" autocomplete="off">
@@ -19,6 +24,15 @@
       <input type="date" id="due-input">
       <button type="button" id="important-toggle" aria-pressed="false">☆ 중요</button>
     </div>
+  </div>
+
+  <div id="tools">
+    <input type="search" id="search-input" placeholder="할 일 찾기" aria-label="할 일 찾기" autocomplete="off">
+    <select id="sort-select" aria-label="정렬">
+      <option value="added">추가한 순서</option>
+      <option value="due">마감일 순서</option>
+      <option value="important">중요한 순서</option>
+    </select>
   </div>
 
   <div id="filters">

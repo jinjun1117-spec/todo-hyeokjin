@@ -46,6 +46,34 @@ h1 {
   color: #2d2a45;
 }
 
+/* 진행 상황 */
+#progress {
+  margin: 0 4px 16px;
+}
+
+#progress-text {
+  margin: 0 0 6px;
+  color: var(--gray);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 2px var(--lavender);
+}
+
+#progress-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--pink), var(--lavender));
+  transition: width 0.3s;
+}
+
 /* 입력 칸 + 추가 버튼 */
 #add-box {
   display: flex;
@@ -130,11 +158,52 @@ button {
   color: #2d2a45;
 }
 
+/* 찾기와 정렬 */
+#tools {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+input[type="search"],
+select {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  box-shadow: 0 3px 12px var(--shadow);
+}
+
+input[type="search"] {
+  flex: 1;
+}
+
+input[type="search"]::placeholder {
+  color: var(--gray);
+}
+
+input[type="search"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--lavender);
+}
+
+select {
+  flex: none;
+  max-width: 45%;
+  font-size: 15px;
+}
+
 /* 보기 고르기 */
 #filters {
   display: flex;
   gap: 8px;
-  margin-top: 22px;
+  margin-top: 12px;
 }
 
 #filters button {
