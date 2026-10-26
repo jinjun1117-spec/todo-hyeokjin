@@ -1479,3 +1479,14 @@ li .memo {
   font-weight: 800;
   text-decoration: underline;
 }
+
+/* 날짜 고르기 창의 확인 버튼 */
+#jump-dialog #jump-ok {
+  background: var(--pink);
+  color: var(--on-a1);
+}
+
+#jump-dialog #jump-ok:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

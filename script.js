@@ -980,11 +980,13 @@ function renderPicker() {
 /* 할 일 탭의 날짜를 누르면 뜨는 달력 창: 날짜를 누르면 바로 그 날짜의 목록으로 간다 */
 let jumpYear = 0;
 let jumpMonth = 0;
+let jumpChosen = null;
 
 function openJump() {
   const p = parseDue(viewDate);
   jumpYear = p.year;
   jumpMonth = p.month - 1;
+  jumpChosen = null;
   renderJump();
   byId('jump-dialog').showModal();
 }
@@ -996,12 +998,21 @@ function renderJump() {
     const names = [];
     if (due === today) names.push('today');
     if (due === viewDate) names.push('current');
+    if (due === jumpChosen) names.push('chosen');
     return names;
   }, function (due) {
-    byId('jump-dialog').close();
-    viewDate = due;
-    render();
-  }, function (due) { return dateText(due) + ' 목록 보기'; }));
+    // 누른 날짜는 선택만 된다. "확인"을 눌러야 이동한다(같은 날짜를 다시 누르면 선택이 풀린다)
+    jumpChosen = due === jumpChosen ? null : due;
+    renderJump();
+  }, function (due) { return dateText(due) + ' 선택'; }));
+  byId('jump-ok').disabled = !jumpChosen;
+}
+
+function confirmJump() {
+  if (!jumpChosen) return;
+  viewDate = jumpChosen;
+  byId('jump-dialog').close();
+  render();
 }
 
 function moveJump(step) {
@@ -1820,6 +1831,7 @@ byId('day-label').addEventListener('click', openJump);
 byId('jump-prev').addEventListener('click', function () { moveJump(-1); });
 byId('jump-next').addEventListener('click', function () { moveJump(1); });
 byId('jump-close').addEventListener('click', function () { byId('jump-dialog').close(); });
+byId('jump-ok').addEventListener('click', confirmJump);
 byId('jump-dialog').addEventListener('click', function (e) {
   if (e.target === byId('jump-dialog')) byId('jump-dialog').close();
 });
