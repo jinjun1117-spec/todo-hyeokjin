@@ -1,4 +1,13 @@
-const STORAGE_KEY = 'todos';
+// 예전에 이 브라우저에만 저장하던 곳(처음 한 번 Supabase로 옮긴다)
+const LEGACY_KEY = 'todos';
+const CACHE_KEY = 'todos-cache';
+const IMPORTED_KEY = 'todos-imported';
+// Supabase: 주소와 "공개 키"만 쓴다(비밀 키는 이 파일에 넣지 않는다)
+const SUPABASE_URL = 'https://rszdkcoljivjwhxaakui.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_HAR6474fEW52-CSgj5OlkQ_fd3GV8Cq';
+const TODO_COLUMNS = 'id,text,done,created_at,due,important,memo,sort_order,sample';
+const BASIC_COLUMNS = 'id,text,done,created_at';
+const NOTICE_MILLISECONDS = 7000;
 const THEME_KEY = 'theme';
 const UNDO_MILLISECONDS = 5000;
 const WEEKDAYS = '일월화수목금토';
@@ -280,7 +289,9 @@ const EMPTY_TEXT = {
   done: '완료한 할 일이 없어요',
 };
 
-let todos = load();
+let todos = loadCache();
+let fullSchema = true;
+let settingsReady = true;
 let activeTab = 'todo';
 let viewDate = todayString();
 let filter = 'all';
@@ -365,47 +376,263 @@ function orderTodos(items) {
   }, []);
 }
 
-/* 저장하고 불러오기 */
-function load() {
+/* 저장하고 불러오기: 할 일은 Supabase의 todos 표에 저장한다.
+   화면은 먼저 바꾸고, 표에는 뒤에서 이어서 저장한다. 이 브라우저에는 "마지막으로 본 목록"만 복사해 둔다 */
+function validDate(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : '';
+}
+
+function dateOfTimestamp(value) {
+  const moment = new Date(value);
+  if (!value || isNaN(moment.getTime())) return todayString();
+  return dueString(moment.getFullYear(), moment.getMonth(), moment.getDate());
+}
+
+// 표의 한 줄(또는 복사해 둔 한 줄)을 화면에서 쓰는 할 일로 바꾼다
+function fromRow(row) {
+  const order = row.sort_order !== undefined ? row.sort_order : row.order;
+  return {
+    id: row.id,
+    text: String(row.text === null || row.text === undefined ? '' : row.text),
+    done: !!row.done,
+    important: !!row.important,
+    // 날짜가 비어 있는 예전 할 일은 만든 날의 날짜로 보인다
+    due: validDate(row.due) || dateOfTimestamp(row.created_at || row.created),
+    memo: typeof row.memo === 'string' ? row.memo : '',
+    sample: !!row.sample,
+    order: order === null || order === undefined || isNaN(Number(order)) ? null : Number(order),
+    created: row.created_at || row.created || '',
+  };
+}
+
+function loadCache() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = JSON.parse(localStorage.getItem(CACHE_KEY));
     if (!Array.isArray(saved)) return [];
-    let moved = false;
-    const loaded = saved
+    return saved
       .filter(function (t) { return t && typeof t.text === 'string'; })
-      .map(function (t) {
-        const hasDate = typeof t.due === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due);
-        if (!hasDate) moved = true;
-        return {
-          id: t.id,
-          text: t.text,
-          done: !!t.done,
-          important: !!t.important,
-          // 날짜가 없던 예전 할 일은 오늘 날짜로 넣는다
-          due: hasDate ? t.due : todayString(),
-          memo: typeof t.memo === 'string' ? t.memo : '',
-          sample: !!t.sample,
-        };
+      .map(fromRow)
+      .map(function (t, i) {
+        if (t.order === null) t.order = i;
+        return t;
       });
-    if (moved) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
-      } catch (e) {
-        // 저장이 막혀도 이번 화면에서는 오늘 날짜로 보인다
-      }
-    }
-    return loaded;
   } catch (e) {
     return [];
   }
 }
 
+// 이 브라우저에 "마지막으로 본 목록"을 복사해 둔다(불러오는 동안·인터넷이 없을 때 보여 주려고)
 function save() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(todos));
   } catch (e) {
     // 저장이 막힌 브라우저에서도 화면은 계속 동작한다
   }
+}
+
+// 예전에 이 브라우저에만 저장했던 할 일
+function readLegacy() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEGACY_KEY));
+    if (!Array.isArray(saved)) return [];
+    return saved
+      .filter(function (t) { return t && typeof t.text === 'string' && t.text.trim(); })
+      .map(function (t) {
+        const todo = fromRow(t);
+        todo.id = tempId();
+        return todo;
+      });
+  } catch (e) {
+    return [];
+  }
+}
+
+/* Supabase 표와 주고받기(다른 사이트의 라이브러리 없이 주소로 바로 부른다) */
+async function db(method, path, body, headers) {
+  const options = { method: method, headers: Object.assign({ apikey: SUPABASE_KEY }, headers || {}) };
+  // 저장하는 요청은 새로고침하거나 창을 닫아도 끝까지 가도록 한다
+  if (method !== 'GET') options.keepalive = true;
+  if (body !== undefined) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
+  const response = await fetch(SUPABASE_URL + '/rest/v1/' + path, options);
+  const text = await response.text();
+  if (!response.ok) {
+    let info = {};
+    try {
+      info = JSON.parse(text);
+    } catch (e) {
+      // 설명이 글자뿐인 경우
+    }
+    const error = new Error(info.message || text || 'HTTP ' + response.status);
+    error.status = response.status;
+    error.code = info.code;
+    throw error;
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+function tempId() {
+  return 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function isTemp(id) {
+  return typeof id === 'string' && id.indexOf('tmp-') === 0;
+}
+
+function isMissingColumn(error) {
+  return !!error && error.status === 400 && (error.code === '42703' || /column/i.test(error.message || ''));
+}
+
+function isMissingTable(error) {
+  return !!error && (error.status === 404 || error.code === 'PGRST205' || error.code === '42P01');
+}
+
+function describeError(error) {
+  if (!error || error.status === undefined) return '인터넷에 연결되지 않았어요';
+  if (error.status === 401 || error.status === 403 || error.code === '42501') {
+    return '이 표를 읽고 쓰는 것이 허용되지 않았어요(Supabase에서 허용 설정이 필요해요)';
+  }
+  if (isMissingTable(error)) return 'Supabase에 표가 없어요';
+  if (isMissingColumn(error)) return '표에 필요한 칸이 없어요';
+  return error.message || '알 수 없는 문제예요';
+}
+
+// 저장에 실패하면 이유를 알려 준다(같은 안내가 연달아 뜨지 않게 몇 초는 건너뛴다)
+let lastNoticeAt = 0;
+function reportError(error) {
+  const now = Date.now();
+  if (now - lastNoticeAt < 4000) return;
+  lastNoticeAt = now;
+  notify('Supabase에 저장하지 못했어요: ' + describeError(error));
+}
+
+// 이번에 연 화면에서 새로 표에 넣은 할 일(불러오기가 끝나기 전에 만든 것을 지우지 않으려고 기억한다)
+const createdHere = new WeakSet();
+
+// 할 일마다 저장 일을 차례대로 이어 붙인다(추가가 끝난 뒤에 체크·삭제가 가도록)
+const chains = new WeakMap();
+
+function chain(todo, step) {
+  const state = chains.get(todo) || { promise: Promise.resolve(), failed: false };
+  state.promise = state.promise.then(function () {
+    if (state.failed) return undefined;
+    return step();
+  }).catch(function (error) {
+    state.failed = isTemp(todo.id);
+    reportError(error);
+  });
+  chains.set(todo, state);
+  return state.promise;
+}
+
+function settled(list) {
+  return Promise.all(list.map(function (t) {
+    const state = chains.get(t);
+    return state ? state.promise : Promise.resolve();
+  }));
+}
+
+function rowFor(todo) {
+  const row = { text: todo.text, done: todo.done };
+  if (fullSchema) {
+    row.important = todo.important;
+    row.memo = todo.memo;
+    row.due = todo.due;
+    row.sort_order = todo.order;
+    row.sample = todo.sample;
+  }
+  return row;
+}
+
+function patchFor(todo, fields) {
+  const body = {};
+  fields.forEach(function (field) {
+    if (field === 'text' || field === 'done') body[field] = todo[field];
+    else if (!fullSchema) return;
+    else if (field === 'order') body.sort_order = todo.order;
+    else body[field] = todo[field];
+  });
+  return body;
+}
+
+// 새 할 일(들)을 표에 넣는다. 표가 정해 준 id로 바꿔 끼운다
+function persistInsert(list) {
+  list.forEach(function (t) {
+    if (!isTemp(t.id)) t.id = tempId();
+    createdHere.add(t);
+  });
+  const request = db('POST', 'todos', list.map(rowFor), { Prefer: 'return=representation' }).then(function (rows) {
+    rows.forEach(function (row, i) {
+      const old = list[i].id;
+      list[i].id = row.id;
+      if (row.created_at) list[i].created = row.created_at;
+      if (detailId === old) detailId = row.id;
+      // 화면은 다시 그리지 않고, 줄에 붙어 있는 id 표시만 새 id로 바꾼다(누르는 중에 줄이 바뀌지 않게)
+      document.querySelectorAll('li[data-id]').forEach(function (li) {
+        if (li.dataset.id === String(old)) li.dataset.id = String(row.id);
+      });
+    });
+    save();
+  });
+  list.forEach(function (t, i) {
+    const state = { promise: null, failed: false };
+    state.promise = request.then(function () {}, function (error) {
+      state.failed = true;
+      if (i === 0) reportError(error);
+    });
+    chains.set(t, state);
+  });
+  return request;
+}
+
+function persistUpdate(todo, fields) {
+  chain(todo, function () {
+    const body = patchFor(todo, fields);
+    if (!Object.keys(body).length) return undefined;
+    return db('PATCH', 'todos?id=eq.' + encodeURIComponent(todo.id), body);
+  });
+}
+
+function persistDelete(list) {
+  settled(list).then(function () {
+    const ids = list.filter(function (t) { return !isTemp(t.id); }).map(function (t) { return encodeURIComponent(t.id); });
+    if (!ids.length) return undefined;
+    return db('DELETE', 'todos?id=in.(' + ids.join(',') + ')');
+  }).catch(reportError);
+}
+
+/* 순서: 배열 순서가 곧 보이는 순서이고, 저장은 sort_order(작을수록 위) 숫자로 한다 */
+function orderBetween(before, after) {
+  if (before && after) return (before.order + after.order) / 2;
+  if (after) return after.order - 1;
+  if (before) return before.order + 1;
+  return 0;
+}
+
+// 배열에 이미 들어간 할 일의 자리에 맞는 순서 숫자를 정한다
+function placeAt(todo) {
+  const i = todos.indexOf(todo);
+  const before = todos[i - 1];
+  const after = todos[i + 1];
+  todo.order = orderBetween(before, after);
+  const tooClose = (before && todo.order <= before.order) || (after && todo.order >= after.order);
+  if (tooClose) renormalize();
+}
+
+// 숫자 사이가 너무 좁아지면 0, 1, 2…로 다시 매긴다
+function renormalize() {
+  todos.forEach(function (t, i) {
+    if (t.order !== i) {
+      t.order = i;
+      persistUpdate(t, ['order']);
+    }
+  });
+}
+
+function notify(message) {
+  showToast(message, null, NOTICE_MILLISECONDS);
 }
 
 function findTodo(id) {
@@ -420,23 +647,29 @@ function addTodo() {
     return;
   }
   // 새 할 일은 배열의 맨 앞에 넣는다. 그러면 자기 무리(나머지 진행 중)의 맨 위에 나타난다
-  todos.unshift({
-    id: Date.now() + Math.random(),
+  const todo = {
+    id: tempId(),
     text: text,
     done: false,
     important: false,
     due: viewDate,
     memo: '',
-  });
+    sample: false,
+    order: todos.length ? todos[0].order - 1 : 0,
+    created: '',
+  };
+  todos.unshift(todo);
   input.value = '';
   input.focus();
   save();
   render();
+  persistInsert([todo]);
 }
 
 // 완료를 바꾸면 새 무리의 맨 위에 나타나도록 배열의 맨 앞으로 옮긴다
 function bringToFront(todo) {
   todos.splice(todos.indexOf(todo), 1);
+  todo.order = todos.length ? todos[0].order - 1 : 0;
   todos.unshift(todo);
 }
 
@@ -447,6 +680,7 @@ function toggleDone(id) {
     bringToFront(todo);
     save();
     render();
+    persistUpdate(todo, ['done', 'order']);
   }
 }
 
@@ -456,6 +690,7 @@ function toggleImportant(id) {
     todo.important = !todo.important;
     save();
     render();
+    persistUpdate(todo, ['important']);
   }
 }
 
@@ -466,19 +701,24 @@ function hasSamples() {
 
 function addSamples() {
   const today = todayString();
-  SAMPLE_TODOS.forEach(function (row, i) {
-    todos.push({
-      id: Date.now() + i + Math.random(),
+  const last = todos.length ? todos[todos.length - 1].order : -1;
+  const added = SAMPLE_TODOS.map(function (row, i) {
+    return {
+      id: tempId(),
       text: row[1],
       done: row[3],
       important: row[2],
       due: addDays(today, row[0]),
       memo: row[4],
       sample: true,
-    });
+      order: last + 1 + i,
+      created: '',
+    };
   });
+  todos.push(...added);
   save();
   render();
+  persistInsert(added);
 }
 
 function toggleSamples() {
@@ -499,10 +739,14 @@ function removeTodos(shouldRemove, message) {
   todos = todos.filter(function (t) { return !shouldRemove(t); });
   save();
   render();
+  persistDelete(removed.map(function (r) { return r.todo; }));
   showToast(message, function () {
+    // 되돌리기: 원래 자리에 다시 끼우고, 표에는 새 줄로 다시 넣는다
     removed.forEach(function (r) {
       todos.splice(Math.min(r.index, todos.length), 0, r.todo);
+      placeAt(r.todo);
     });
+    persistInsert(removed.map(function (r) { return r.todo; }));
   });
 }
 
@@ -524,13 +768,14 @@ function undo() {
   render();
 }
 
-function showToast(message, undoWith) {
+function showToast(message, undoWith, milliseconds) {
   undoAction = undoWith;
+  undoButton.hidden = !undoWith;
   toastText.textContent = message;
   (popup.open ? popup : document.body).append(toast);
   toast.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(hideToast, UNDO_MILLISECONDS);
+  toastTimer = setTimeout(hideToast, milliseconds || UNDO_MILLISECONDS);
 }
 
 function hideToast() {
@@ -593,6 +838,7 @@ function saveDetail() {
   detail.close();
   save();
   render();
+  persistUpdate(todo, ['text', 'memo', 'important', 'done', 'order']);
 }
 
 // 날짜 옮기기: 고친 값을 저장하고, 할 일의 날짜를 바꾼 뒤 창을 닫는다. 되돌리기도 걸어 둔다
@@ -608,7 +854,11 @@ function moveDetailTo(target, label) {
   detail.close();
   save();
   render();
-  showToast(label + ': ' + dateText(todo.due), function () { todo.due = oldDue; });
+  persistUpdate(todo, ['text', 'memo', 'important', 'done', 'order', 'due']);
+  showToast(label + ': ' + dateText(todo.due), function () {
+    todo.due = oldDue;
+    persistUpdate(todo, ['due']);
+  });
 }
 
 // 내일로 미루기: 오늘과 그 할 일 날짜 중 더 뒤인 날의 다음 날로 보낸다
@@ -714,8 +964,10 @@ function commitOrder(li) {
   todos.splice(todos.indexOf(todo), 1);
   const at = todos.indexOf(other);
   todos.splice(next ? at : at + 1, 0, todo);
+  placeAt(todo);
   save();
   render();
+  persistUpdate(todo, ['order']);
 }
 
 function focusHandle(id) {
@@ -1178,10 +1430,11 @@ function toggleTheme() {
   render();
 }
 
-function setSkin(id) {
+function setSkin(id, fromRemote) {
   skinId = id;
   storeSet(SKIN_KEY, id);
   applyLook();
+  if (!fromRemote) queueSetting('skin', id, 0);
 }
 
 /* 옵션 화면: 이름, 테마 목록, 테마 미리보기 */
@@ -1311,6 +1564,7 @@ byId('preview-choose').addEventListener('click', chooseTheme);
 nameInput.addEventListener('input', function () {
   userName = nameInput.value.trim();
   storeSet(NAME_KEY, userName);
+  queueSetting('name', userName, 600);
   render();
 });
 addButton.addEventListener('click', addTodo);
@@ -1401,6 +1655,138 @@ detail.addEventListener('click', function (e) {
 });
 detail.addEventListener('close', function () { detailId = null; });
 
+/* 설정(이름·테마)은 settings 표에도 저장한다. 글자를 칠 때마다 보내지 않게 조금 모아서 보낸다 */
+const settingTimers = {};
+let settingsChain = Promise.resolve();
+let settingsNoticed = false;
+
+function queueSetting(key, value, wait) {
+  clearTimeout(settingTimers[key]);
+  settingTimers[key] = setTimeout(function () {
+    settingsChain = settingsChain.then(function () {
+      if (!settingsReady) return undefined;
+      return db('POST', 'settings?on_conflict=key', [{ key: key, value: value }], { Prefer: 'resolution=merge-duplicates' });
+    }).catch(handleSettingsError);
+  }, wait);
+}
+
+function handleSettingsError(error) {
+  if (isMissingTable(error)) settingsReady = false;
+  if (settingsNoticed) return;
+  settingsNoticed = true;
+  notify('이름·테마를 Supabase에 저장하지 못했어요(' + describeError(error) + '). 이 브라우저에는 저장돼요');
+}
+
+async function loadSettings() {
+  try {
+    const rows = await db('GET', 'settings?select=key,value');
+    const saved = {};
+    rows.forEach(function (row) { saved[row.key] = row.value; });
+    if (Object.prototype.hasOwnProperty.call(saved, 'name')) {
+      userName = String(saved.name || '').trim();
+      storeSet(NAME_KEY, userName);
+    } else if (userName) {
+      queueSetting('name', userName, 0);
+    }
+    if (THEMES.some(function (t) { return t.id === saved.skin; })) {
+      if (saved.skin !== skinId) setSkin(saved.skin, true);
+    } else if (skinId !== DEFAULT_SKIN) {
+      queueSetting('skin', skinId, 0);
+    }
+  } catch (error) {
+    handleSettingsError(error);
+  }
+}
+
+/* 시작할 때 표에서 할 일을 불러온다 */
+async function fetchTodoRows() {
+  try {
+    const rows = await db('GET', 'todos?select=' + TODO_COLUMNS + '&order=sort_order.asc.nullslast,created_at.desc');
+    fullSchema = true;
+    return rows;
+  } catch (error) {
+    if (!isMissingColumn(error)) throw error;
+    // 새 칸(due·important·memo·sort_order·sample)이 아직 없는 표: 글과 완료만 저장한다
+    fullSchema = false;
+    notify('Supabase 표에 새 칸(due, important, memo, sort_order, sample)이 없어서 글과 완료만 저장돼요. 나머지는 새로고침하면 사라져요');
+    return db('GET', 'todos?select=' + BASIC_COLUMNS + '&order=created_at.desc');
+  }
+}
+
+function sortByOrder(list) {
+  return list.slice().sort(function (a, b) {
+    const x = a.order === null ? Infinity : a.order;
+    const y = b.order === null ? Infinity : b.order;
+    return x === y ? 0 : x < y ? -1 : 1;
+  });
+}
+
+async function loadTodos() {
+  const rows = await fetchTodoRows();
+  const fetched = rows.map(fromRow);
+  const fixes = [];
+
+  // 순서가 비어 있는 예전 할 일은 만든 순서(표가 정렬해 준 순서) 그대로 맨 아래에 붙인다
+  let next = fetched.reduce(function (max, t) { return t.order !== null && t.order > max ? t.order : max; }, -1) + 1;
+  rows.forEach(function (row, i) {
+    const todo = fetched[i];
+    const needsOrder = todo.order === null;
+    const needsDue = fullSchema && !validDate(row.due);
+    if (needsOrder) {
+      todo.order = next;
+      next += 1;
+    }
+    if (fullSchema && (needsOrder || needsDue)) fixes.push(todo);
+  });
+
+  // 불러오는 동안 새로 만든 할 일은 그대로 남기고, 예전에 복사해 둔 목록에만 있던 것(다른 곳에서 이미 지운 것)은 버린다
+  const knownIds = new Set(fetched.map(function (t) { return String(t.id); }));
+  const local = todos.filter(function (t) { return !knownIds.has(String(t.id)) && (isTemp(t.id) || createdHere.has(t)); });
+  todos = sortByOrder(fetched.concat(local));
+  if (todos.some(function (t, i) { return i > 0 && t.order <= todos[i - 1].order; })) renormalize();
+  fixes.forEach(function (t) { persistUpdate(t, ['order', 'due']); });
+
+  save();
+  render();
+  if (fullSchema) importLegacy();
+}
+
+// 예전에 이 브라우저에만 저장했던 할 일을 처음 한 번만 표로 옮긴다
+function importLegacy() {
+  if (storeGet(IMPORTED_KEY)) return;
+  const old = readLegacy();
+  const have = new Set(todos.map(function (t) { return t.text + '|' + t.due; }));
+  const fresh = old.filter(function (t) { return !have.has(t.text + '|' + t.due); });
+  if (!fresh.length) {
+    storeSet(IMPORTED_KEY, '1');
+    return;
+  }
+  const last = todos.length ? todos[todos.length - 1].order : -1;
+  fresh.forEach(function (t, i) { t.order = last + 1 + i; });
+  todos.push(...fresh);
+  save();
+  render();
+  persistInsert(fresh).then(function () {
+    storeSet(IMPORTED_KEY, '1');
+    notify('이 브라우저에 있던 할 일 ' + fresh.length + '개를 Supabase로 옮겼어요');
+  }).catch(function () {
+    // 실패하면 표시를 남기지 않아서 다음에 다시 시도한다
+  });
+}
+
+async function start() {
+  try {
+    await loadTodos();
+  } catch (error) {
+    document.documentElement.dataset.loaded = 'error';
+    reportError(error);
+  }
+  await loadSettings();
+  if (document.documentElement.dataset.loaded !== 'error') document.documentElement.dataset.loaded = 'true';
+  render();
+}
+
 todayText.textContent = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
 applyTheme(readTheme());
 render();
+start();
