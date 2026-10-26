@@ -492,12 +492,15 @@ function samePart(a, b) {
   return a.dataset.bucket === b.dataset.bucket;
 }
 
-// 화면에 보이는 순서(li 차례)를 할 일 배열 순서에 반영한다
+// 화면에 보이는 순서(li 차례)를 할 일 배열 순서에 반영한다.
+// 자리를 정하는 기준은 같은 무리의 이웃 줄이다(다른 무리 줄과의 순서는 보이는 순서에 영향을 주지 않는다).
 function commitOrder(li) {
   const todo = todos.find(function (t) { return String(t.id) === li.dataset.id; });
   if (!todo) return;
-  const next = li.nextElementSibling;
-  const prev = li.previousElementSibling;
+  let next = li.nextElementSibling;
+  while (next && !samePart(next, li)) next = next.nextElementSibling;
+  let prev = li.previousElementSibling;
+  while (prev && !samePart(prev, li)) prev = prev.previousElementSibling;
   const neighbor = next || prev;
   const other = neighbor && todos.find(function (t) { return String(t.id) === neighbor.dataset.id; });
   if (!other || other === todo) return;
