@@ -26,6 +26,11 @@ const count = byId('count');
 const clearButton = byId('clear-done');
 const importantList = byId('important-list');
 const importantEmpty = byId('important-empty');
+const calTitle = byId('cal-title');
+const calGrid = byId('cal-grid');
+const calDayTitle = byId('cal-day-title');
+const calendarList = byId('calendar-list');
+const calendarEmpty = byId('calendar-empty');
 const ddayList = byId('dday-list');
 const ddayEmpty = byId('dday-empty');
 const todayText = byId('today');
@@ -37,6 +42,7 @@ const tabButtons = document.querySelectorAll('#tabbar button');
 const panels = {
   todo: byId('tab-todo'),
   important: byId('tab-important'),
+  calendar: byId('tab-calendar'),
   dday: byId('tab-dday'),
 };
 const detail = byId('detail');
@@ -61,6 +67,9 @@ let newImportant = false;
 let removed = [];
 let toastTimer = null;
 let detailId = null;
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedDate = todayString();
 
 function load() {
   try {
@@ -118,6 +127,16 @@ function ddayText(due) {
   const diff = dayDiff(due);
   if (diff === 0) return 'D-DAY';
   return diff > 0 ? 'D-' + diff : 'D+' + Math.abs(diff);
+}
+
+function todayString() {
+  const now = new Date();
+  return dueString(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+// month는 0부터 시작(0 = 1월)
+function dueString(year, month, day) {
+  return year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
 }
 
 function dateColor(due) {
@@ -400,6 +419,82 @@ function renderImportantTab() {
   importantEmpty.hidden = items.length > 0;
 }
 
+function renderCalendarTab() {
+  calTitle.textContent = calYear + '년 ' + (calMonth + 1) + '월';
+
+  const cells = [];
+  WEEKDAYS.split('').forEach(function (name, i) {
+    const label = document.createElement('span');
+    label.className = 'weekday' + (i === 0 ? ' sun' : '');
+    label.textContent = name;
+    cells.push(label);
+  });
+
+  const firstWeekday = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  for (let i = 0; i < firstWeekday; i++) cells.push(document.createElement('span'));
+
+  const today = todayString();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const due = dueString(calYear, calMonth, day);
+    const items = todos.filter(function (t) { return t.due === due; });
+
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cal-day';
+    if ((firstWeekday + day - 1) % 7 === 0) cell.classList.add('sun');
+    if (due === today) cell.classList.add('today');
+    if (due === selectedDate) cell.classList.add('selected');
+    cell.setAttribute('aria-label', dateText(due) + (items.length ? ', 할 일 ' + items.length + '개' : ''));
+    cell.setAttribute('aria-pressed', String(due === selectedDate));
+    cell.dataset.date = due;
+
+    const number = document.createElement('span');
+    number.textContent = day;
+    const dots = document.createElement('span');
+    dots.className = 'dots';
+    items.slice(0, 3).forEach(function (t) {
+      const dot = document.createElement('span');
+      dot.className = 'dot' + (t.done ? ' finished' : '');
+      dot.style.setProperty('--date-color', dateColor(due));
+      dots.append(dot);
+    });
+    cell.append(number, dots);
+    cell.addEventListener('click', function () {
+      selectedDate = due;
+      render();
+    });
+    cells.push(cell);
+  }
+  calGrid.replaceChildren(...cells);
+
+  const dayItems = todos.filter(function (t) { return t.due === selectedDate; });
+  calDayTitle.textContent = dateText(selectedDate) + ' · ' + ddayText(selectedDate);
+  calendarList.replaceChildren(...dayItems.map(makeItem));
+  calendarEmpty.hidden = dayItems.length > 0;
+}
+
+function moveMonth(step) {
+  const moved = new Date(calYear, calMonth + step, 1);
+  calYear = moved.getFullYear();
+  calMonth = moved.getMonth();
+  render();
+}
+
+function goToday() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  selectedDate = todayString();
+  render();
+}
+
+function addOnSelectedDate() {
+  dueInput.value = selectedDate;
+  switchTab('todo');
+  input.focus();
+}
+
 function renderDdayTab() {
   const items = todos.filter(function (t) { return t.due && !t.done; }).sort(compareByDue);
   ddayList.replaceChildren(...items.map(makeDdayCard));
@@ -409,6 +504,7 @@ function renderDdayTab() {
 function render() {
   renderTodoTab();
   renderImportantTab();
+  renderCalendarTab();
   renderDdayTab();
 
   Object.keys(panels).forEach(function (name) {
@@ -478,6 +574,11 @@ clearButton.addEventListener('click', clearDone);
 tabButtons.forEach(function (b) {
   b.addEventListener('click', function () { switchTab(b.dataset.tab); });
 });
+
+byId('cal-prev').addEventListener('click', function () { moveMonth(-1); });
+byId('cal-next').addEventListener('click', function () { moveMonth(1); });
+byId('cal-today').addEventListener('click', goToday);
+byId('cal-add').addEventListener('click', addOnSelectedDate);
 
 detailImportant.addEventListener('click', function () {
   setDetailImportant(detailImportant.getAttribute('aria-pressed') !== 'true');

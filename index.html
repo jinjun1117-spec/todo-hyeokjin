@@ -65,6 +65,22 @@
       <p id="important-empty" class="empty">중요 표시한 할 일이 없어요</p>
     </section>
 
+    <section id="tab-calendar" role="tabpanel" aria-label="캘린더" hidden>
+      <div id="cal-head">
+        <button type="button" id="cal-prev" aria-label="이전 달">‹</button>
+        <h2 id="cal-title"></h2>
+        <button type="button" id="cal-next" aria-label="다음 달">›</button>
+        <button type="button" id="cal-today">오늘</button>
+      </div>
+      <div id="cal-grid"></div>
+      <div id="cal-day">
+        <h3 id="cal-day-title"></h3>
+        <ul id="calendar-list"></ul>
+        <p id="calendar-empty" class="empty">이 날 마감인 할 일이 없어요</p>
+        <button type="button" id="cal-add">이 날짜로 할 일 추가</button>
+      </div>
+    </section>
+
     <section id="tab-dday" role="tabpanel" aria-label="디데이" hidden>
       <h2>⏳ 디데이</h2>
       <div id="dday-list"></div>
@@ -75,6 +91,7 @@
   <nav id="tabbar" role="tablist" aria-label="화면 고르기">
     <button type="button" role="tab" data-tab="todo" aria-selected="true"><span aria-hidden="true">✅</span>할 일</button>
     <button type="button" role="tab" data-tab="important" aria-selected="false"><span aria-hidden="true">⭐</span>중요</button>
+    <button type="button" role="tab" data-tab="calendar" aria-selected="false"><span aria-hidden="true">📅</span>캘린더</button>
     <button type="button" role="tab" data-tab="dday" aria-selected="false"><span aria-hidden="true">⏳</span>디데이</button>
   </nav>
 
