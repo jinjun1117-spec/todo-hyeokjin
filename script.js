@@ -14,8 +14,20 @@ const SANS = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sa
 const SERIF = '"Noto Serif KR", "Nanum Myeongjo", AppleMyungjo, Batang, Georgia, serif';
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK KR", "Apple SD Gothic Neo", monospace';
 const SWISS = '"Helvetica Neue", Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
-const ELEVATIONS = { soft: '0 3px 12px var(--shadow)', hard: '4px 4px 0 var(--ink)', flat: 'none' };
-const BOX_SHADOWS = { offset: '0 6px 0 var(--lavender)', soft: '0 6px 20px var(--shadow)', hard: '6px 6px 0 var(--ink)', flat: 'none' };
+const GLOW_EDGE = '0 0 0 1px color-mix(in srgb, var(--lavender) 55%, transparent)';
+const ELEVATIONS = {
+  soft: '0 3px 12px var(--shadow)',
+  hard: '4px 4px 0 var(--ink)',
+  glow: GLOW_EDGE + ', 0 0 12px color-mix(in srgb, var(--lavender) 28%, transparent)',
+  flat: 'none',
+};
+const BOX_SHADOWS = {
+  offset: '0 6px 0 var(--lavender)',
+  soft: '0 6px 20px var(--shadow)',
+  hard: '6px 6px 0 var(--ink)',
+  glow: GLOW_EDGE + ', 0 0 22px color-mix(in srgb, var(--lavender) 35%, transparent)',
+  flat: 'none',
+};
 
 function palette(bg, card, ink, gray, a1, onA1, a2, onA2, hi, onHi, rose, star, extra) {
   return Object.assign({ bg: bg, card: card, ink: ink, gray: gray, a1: a1, onA1: onA1, a2: a2, onA2: onA2, hi: hi, onHi: onHi, rose: rose, star: star }, extra || {});
@@ -24,7 +36,7 @@ function palette(bg, card, ink, gray, a1, onA1, a2, onA2, hi, onHi, rose, star, 
 const THEMES = [
   {
     id: 'clean', name: '클린 미니멀', desc: '군더더기 없는 흑백 위주의 깔끔한 화면',
-    rs: 0.5, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#16161a',
+    rs: 0.5, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#16161a', title: 'rule',
     dc: ['#e9e9ee', '#dbe5f0', '#e1ecda', '#f2e8d6', '#e5dcf1', '#f1dde1', '#d6ece9', '#efeed4'],
     light: palette('#f7f7f8', '#ffffff', '#16161a', '#86868e', '#16161a', '#ffffff', '#dcdce2', '#16161a', '#ececf0', '#16161a', '#d92d4f', '#e8a600'),
     dark: palette('#101012', '#1a1a1e', '#f1f1f4', '#8c8c96', '#f1f1f4', '#101012', '#3a3a42', '#f1f1f4', '#2a2a30', '#f1f1f4', '#ff6b86', '#f2b600'),
@@ -38,28 +50,28 @@ const THEMES = [
   },
   {
     id: 'public', name: '공공 신뢰', desc: '정부 서비스처럼 차분한 파랑과 또렷한 글씨',
-    rs: 0.4, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#1b2733',
+    rs: 0.4, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#1b2733', title: 'rule',
     dc: ['#d6e4f5', '#d6eedd', '#f7e6c4', '#e6dcf0', '#f6d9d9', '#cfeaee', '#e8efc9', '#f0dde8'],
     light: palette('#f4f6f9', '#ffffff', '#1b2733', '#5f6b7a', '#0b5cab', '#ffffff', '#b9c7d9', '#1b2733', '#e3ebf5', '#1b2733', '#c62828', '#e08a00'),
     dark: palette('#0f1923', '#172433', '#eaf0f7', '#9aa8b8', '#5aa0ee', '#0b1620', '#34506e', '#eaf0f7', '#22384f', '#eaf0f7', '#ff7a7a', '#f5b942'),
   },
   {
     id: 'control', name: '다크 데이터 관제실', desc: '어두운 바탕에 청록 포인트, 표와 숫자 느낌',
-    rs: 0.3, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#04120f',
+    rs: 0.3, font: MONO, elev: 'flat', box: 'flat', bw: 1, on: '#04120f', title: 'rule',
     dc: ['#19c3a6', '#4aa8ff', '#ffb020', '#b48cff', '#ff6f91', '#7be0ff', '#a6e22e', '#ff9f5a'],
     light: palette('#eef3f6', '#ffffff', '#0f1c26', '#5c7385', '#0b8a75', '#ffffff', '#b5c8d4', '#0f1c26', '#d6e6ee', '#0f1c26', '#d63a5a', '#d98a00'),
     dark: palette('#0a0f14', '#121a22', '#d6e4ee', '#6f8596', '#19c3a6', '#04120f', '#24465a', '#d6e4ee', '#17303d', '#d6e4ee', '#ff5c7a', '#ffb020'),
   },
   {
     id: 'bento', name: '벤토 그리드', desc: '큼직하게 둥근 타일이 모인 느낌',
-    rs: 1.4, font: SANS, elev: 'flat', box: 'soft', bw: 0, on: '#1c1f26',
+    rs: 1.4, font: SANS, elev: 'flat', box: 'soft', bw: 0, on: '#1c1f26', title: 'none',
     dc: ['#ffd9c7', '#d8e6ff', '#d6f2df', '#f3e1ff', '#fff0b8', '#ffd6e6', '#d3f1f5', '#e6eccf'],
     light: palette('#eceff3', '#ffffff', '#1c1f26', '#7b8394', '#ff7a45', '#1c1f26', '#d7dbe4', '#1c1f26', '#ffe1d3', '#1c1f26', '#e0405b', '#f5a700'),
     dark: palette('#121418', '#1d2026', '#eef0f4', '#8e96a6', '#ff8a5c', '#1a0f0a', '#343944', '#eef0f4', '#3a2a22', '#eef0f4', '#ff7b93', '#f5b82e'),
   },
   {
     id: 'glass', name: '소프트 글래스', desc: '반투명 유리 카드와 은은하게 번지는 배경',
-    rs: 1.5, font: SANS, elev: 'soft', box: 'soft', bw: 1, blur: '14px', on: '#1e293b',
+    rs: 1.5, font: SANS, elev: 'soft', box: 'soft', bw: 1, blur: '14px', on: '#1e293b', title: 'none',
     dc: ['#c7d2fe', '#fbcfe8', '#bae6fd', '#bbf7d0', '#fde68a', '#ddd6fe', '#fecdd3', '#a7f3d0'],
     light: palette('#e6ecfb', 'rgba(255, 255, 255, 0.55)', '#1e293b', '#64748b', '#6366f1', '#ffffff', '#c7d2fe', '#1e293b', '#e0e7ff', '#1e293b', '#e11d48', '#f59e0b',
       { cardSolid: '#f1f4ff', bgImage: 'linear-gradient(135deg, #dbeafe, #fce7f3 50%, #e0f2fe)' }),
@@ -68,7 +80,7 @@ const THEMES = [
   },
   {
     id: 'hanji', name: '한지 에디토리얼', desc: '종이 질감의 따뜻한 바탕과 명조 글씨',
-    rs: 0.3, font: SERIF, elev: 'flat', box: 'flat', bw: 1, on: '#2b2620',
+    rs: 0.3, font: SERIF, elev: 'flat', box: 'flat', bw: 1, on: '#2b2620', title: 'rule',
     dc: ['#e8d5c4', '#d9dfc9', '#dccfe0', '#efe0b6', '#cfdde0', '#e9c9c4', '#d6d9c0', '#e2cfd6'],
     light: palette('#f4efe4', '#fbf8f0', '#2b2620', '#8a7f6d', '#8c2f2f', '#fbf8f0', '#cdbf9f', '#2b2620', '#e8dcc0', '#2b2620', '#a83232', '#b8860b'),
     dark: palette('#1c1814', '#26201a', '#eee4d0', '#a89c86', '#d9805f', '#1c1814', '#5a4d3a', '#eee4d0', '#3a2f22', '#eee4d0', '#e07a6a', '#d9a441'),
@@ -91,7 +103,7 @@ const THEMES = [
   },
   {
     id: 'neon', name: '네온 다크', desc: '짙은 보라 밤에 번쩍이는 분홍과 하늘색',
-    rs: 0.6, font: SANS, elev: 'soft', box: 'soft', bw: 1, on: '#150d24',
+    rs: 0.6, font: SANS, elev: 'glow', box: 'glow', bw: 1, on: '#150d24', title: 'rule', glow: true,
     dc: ['#ff7be9', '#7bf0ff', '#fff27b', '#a9ff7b', '#c19bff', '#ffb27b', '#7bffd0', '#ff7b9c'],
     light: palette('#f7f0ff', '#ffffff', '#2a1148', '#7c5ea8', '#d900b0', '#ffffff', '#00b8d4', '#06222a', '#ead6ff', '#2a1148', '#e0204a', '#e6b800'),
     dark: palette('#0b0713', '#150d24', '#f6eaff', '#9d86c4', '#ff2bd6', '#150d24', '#00e5ff', '#06222a', '#3a1a5c', '#f6eaff', '#ff4d6d', '#ffe600'),
@@ -105,7 +117,7 @@ const THEMES = [
   },
   {
     id: 'swiss', name: '스위스 그리드', desc: '흑백과 빨강, 각진 모서리의 정돈된 격자',
-    rs: 0, font: SWISS, elev: 'flat', box: 'flat', bw: 1, on: '#111111',
+    rs: 0, font: SWISS, elev: 'flat', box: 'flat', bw: 1, on: '#111111', title: 'rule',
     dc: ['#f1f1f1', '#e8e8e8', '#dedede', '#d3d3d3', '#c8c8c8', '#fadbd8', '#ffe5e3', '#ededed'],
     light: palette('#ffffff', '#ffffff', '#111111', '#6a6a6a', '#e30613', '#ffffff', '#111111', '#ffffff', '#f3f3f3', '#111111', '#e30613', '#f2a900'),
     dark: palette('#111111', '#1a1a1a', '#f5f5f5', '#9a9a9a', '#ff3b30', '#ffffff', '#f5f5f5', '#111111', '#2a2a2a', '#f5f5f5', '#ff5a50', '#ffb800'),
@@ -120,14 +132,14 @@ const THEMES = [
   },
   {
     id: 'navy', name: '코퍼레이트 네이비', desc: '진한 남색과 금색 포인트의 업무용 화면',
-    rs: 0.6, font: SANS, elev: 'soft', box: 'flat', bw: 1, on: '#14213d',
+    rs: 0.6, font: SANS, elev: 'soft', box: 'flat', bw: 1, on: '#14213d', title: 'rule',
     dc: ['#d3dcf0', '#f3e1b8', '#cfe7e3', '#e3d3ee', '#f1d0d0', '#c8def3', '#dfe8c5', '#ecd9c6'],
     light: palette('#eef1f6', '#ffffff', '#14213d', '#6b7a99', '#14213d', '#ffffff', '#b8c4dc', '#14213d', '#dfe6f2', '#14213d', '#c0392b', '#e0a100'),
     dark: palette('#0a1226', '#121d38', '#e8eefc', '#8fa0c4', '#fca311', '#14213d', '#2c3e66', '#e8eefc', '#1e2e52', '#e8eefc', '#ff7b7b', '#fca311'),
   },
   {
     id: 'retro', name: '레트로 그린 스크린', desc: '검은 화면에 초록 글자, 옛날 단말기 느낌',
-    rs: 0, font: MONO, elev: 'flat', box: 'flat', bw: 1, on: '#021008',
+    rs: 0, font: MONO, elev: 'flat', box: 'flat', bw: 1, on: '#021008', title: 'none', glow: true,
     dc: ['#b8f5c2', '#e6ff99', '#99f0d8', '#c8e6a0', '#a6e6b8', '#d9f2a6', '#8fe0a8', '#ccf5b0'],
     light: palette('#e8f5e9', '#f4fbf4', '#0b3d1a', '#4f7a5a', '#0b5d1e', '#e8f5e9', '#8fc29a', '#0b3d1a', '#cfe8d3', '#0b3d1a', '#b3261e', '#8a7a00'),
     dark: palette('#021008', '#04200f', '#33ff66', '#1fa84a', '#33ff66', '#021008', '#1a7a38', '#33ff66', '#0b3a1c', '#33ff66', '#ff5e5e', '#e6ff33'),
@@ -149,7 +161,9 @@ function themeVars(theme, mode) {
     '--on-a2': m.onA2,
     '--yellow': m.hi,
     '--on-yellow': m.onHi,
-    '--hl': m.hl || m.hi,
+    '--hl': theme.title === 'rule' ? m.a1 : (m.hl || m.hi),
+    '--hl-from': theme.title === 'rule' ? '90%' : theme.title === 'none' ? '100%' : '55%',
+    '--title-shadow': theme.glow ? '0 0 10px color-mix(in srgb, var(--pink) 70%, transparent)' : 'none',
     '--rose': m.rose,
     '--star': m.star,
     '--on-accent': theme.on,
@@ -197,6 +211,7 @@ const popupOpen = byId('popup-open');
 const searchInput = byId('search-input');
 const spanButtons = document.querySelectorAll('#span-tabs button');
 const spanLabel = byId('span-label');
+const daysFilterButtons = document.querySelectorAll('#days-filter button');
 const sampleButton = byId('sample-button');
 const daysList = byId('days-list');
 const daysEmpty = byId('days-empty');
@@ -276,6 +291,7 @@ let optionsPage = 'main';
 let previewId = null;
 let lastTab = 'todo';
 let spanMode = 'week';
+let daysFilter = 'all';
 let spanAnchor = todayString();
 let undoAction = null;
 let toastTimer = null;
@@ -824,7 +840,7 @@ function renderTodoTab() {
 
   const dayItems = todos.filter(function (t) { return t.due === viewDate; });
   const shown = orderTodos(dayItems).filter(function (t) {
-    if (filter === 'important') return t.important;
+    if (filter === 'important') return t.important && !t.done;
     if (filter === 'active') return !t.done;
     if (filter === 'done') return t.done;
     return true;
@@ -993,8 +1009,8 @@ function renderDaysTab() {
     const items = orderTodos(todos.filter(function (t) {
       return t.due === due && (!word || t.text.toLowerCase().includes(word));
     }));
-    // 찾는 중에는 맞는 할 일이 있는 날짜만 보인다
-    if (word && items.length === 0) return null;
+    // 찾는 중이거나 "할 일 있는 날짜만"을 골랐을 때는 할 일이 있는 날짜만 보인다
+    if ((word || daysFilter === 'has') && items.length === 0) return null;
     shownCount += 1;
 
     const group = document.createElement('div');
@@ -1040,8 +1056,11 @@ function renderDaysTab() {
     return group;
   }).filter(Boolean));
 
-  daysEmpty.textContent = '검색 결과가 없어요';
+  daysEmpty.textContent = word ? '검색 결과가 없어요' : '할 일이 있는 날짜가 없어요';
   daysEmpty.hidden = shownCount > 0;
+  daysFilterButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.days === daysFilter));
+  });
   sampleButton.textContent = hasSamples() ? '🧪 테스트 할 일 지우기' : '🧪 테스트 할 일 20개 넣기';
 }
 
@@ -1191,7 +1210,6 @@ function buildPreview(theme, mode) {
     '<div class="pv-row" style="--date-color: var(--dc0)"><i class="pv-check"></i><span>장보기</span><b class="pv-star">★</b></div>' +
     '<div class="pv-row" style="--date-color: var(--dc1)"><i class="pv-check"></i><span>운동 30분</span><b>☆</b></div>' +
     '<div class="pv-row done" style="--date-color: var(--dc2)"><i class="pv-check on"></i><span>책 읽기</span><b>☆</b></div>' +
-    '<span class="pv-chip" style="--date-color: var(--dc3)">10월 29일 · D-3</span>' +
     '<div class="pv-tabs"><span class="on">✅ 할 일</span><span>📅</span><span>📋</span></div>';
   return box;
 }
@@ -1245,12 +1263,20 @@ function renderOptions() {
   if (optionsPage === 'preview') {
     const theme = findTheme(previewId);
     byId('preview-name').textContent = theme.name;
+    byId('preview-count').textContent = (THEMES.indexOf(theme) + 1) + ' / ' + THEMES.length;
     byId('preview-desc').textContent = theme.desc;
     byId('preview-light').replaceChildren(buildPreview(theme, 'light'));
     byId('preview-dark').replaceChildren(buildPreview(theme, 'dark'));
     byId('preview-choose').textContent = theme.id === skinId ? '지금 쓰는 테마예요' : '이 테마로 선택';
     byId('preview-choose').disabled = theme.id === skinId;
   }
+}
+
+// 미리보기에서 이전·다음 테마로 넘겨 본다(끝에서는 처음/끝으로 이어진다)
+function movePreview(step) {
+  const index = THEMES.findIndex(function (t) { return t.id === previewId; });
+  previewId = THEMES[(index + step + THEMES.length) % THEMES.length].id;
+  render();
 }
 
 function chooseTheme() {
@@ -1279,7 +1305,8 @@ byId('opt-theme-row').addEventListener('click', function () {
   optionsPage = 'themes';
   render();
 });
-byId('preview-back').addEventListener('click', optionsBack);
+byId('preview-prev').addEventListener('click', function () { movePreview(-1); });
+byId('preview-next').addEventListener('click', function () { movePreview(1); });
 byId('preview-choose').addEventListener('click', chooseTheme);
 nameInput.addEventListener('input', function () {
   userName = nameInput.value.trim();
@@ -1316,6 +1343,12 @@ sampleButton.addEventListener('click', toggleSamples);
 spanButtons.forEach(function (b) {
   b.addEventListener('click', function () {
     spanMode = b.dataset.span;
+    render();
+  });
+});
+daysFilterButtons.forEach(function (b) {
+  b.addEventListener('click', function () {
+    daysFilter = b.dataset.days;
     render();
   });
 });

@@ -13,8 +13,8 @@
       <h1 id="page-title">할 일 목록</h1>
     </div>
     <div id="top-actions">
-      <button type="button" id="settings-button" aria-label="옵션 열기">⚙️</button>
       <button type="button" id="theme-button" aria-label="다크 모드로 바꾸기">🌙</button>
+      <button type="button" id="settings-button" aria-label="옵션 열기">⚙️</button>
     </div>
   </header>
 
@@ -87,7 +87,7 @@
       </div>
 
       <div id="opt-preview" hidden>
-        <h2 id="preview-name"></h2>
+        <h2><span id="preview-name"></span> <small id="preview-count"></small></h2>
         <p class="hint" id="preview-desc"></p>
         <div class="preview-pair">
           <figure>
@@ -99,9 +99,10 @@
             <div id="preview-dark"></div>
           </figure>
         </div>
-        <div class="detail-row">
-          <button type="button" id="preview-back">뒤로</button>
+        <div class="detail-row preview-nav">
+          <button type="button" id="preview-prev">‹ 이전</button>
           <button type="button" id="preview-choose">이 테마로 선택</button>
+          <button type="button" id="preview-next">다음 ›</button>
         </div>
       </div>
     </section>
@@ -110,6 +111,10 @@
       <div id="span-tabs" role="group" aria-label="보는 범위">
         <button type="button" data-span="week" aria-pressed="true">한주 보기</button>
         <button type="button" data-span="month" aria-pressed="false">한달 보기</button>
+      </div>
+      <div id="days-filter" role="group" aria-label="보여 줄 날짜">
+        <button type="button" data-days="all" aria-pressed="true">전체 날짜</button>
+        <button type="button" data-days="has" aria-pressed="false">할 일 있는 날짜만</button>
       </div>
       <div id="span-nav">
         <button type="button" id="span-prev" aria-label="이전">‹</button>

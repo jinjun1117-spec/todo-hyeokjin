@@ -30,6 +30,8 @@
   --bw: 0px;
   --blur: none;
   --bg-image: none;
+  --hl-from: 55%;
+  --title-shadow: none;
 }
 
 :root[data-theme="dark"] {
@@ -114,8 +116,9 @@ h1 {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(transparent 55%, var(--hl) 55%);
+  background: linear-gradient(transparent var(--hl-from), var(--hl) var(--hl-from));
   color: var(--ink);
+  text-shadow: var(--title-shadow);
 }
 
 h2 {
@@ -236,7 +239,8 @@ input[type="search"]:focus {
 
 /* 보기 고르기 */
 #filters,
-#span-tabs {
+#span-tabs,
+#days-filter {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -244,7 +248,8 @@ input[type="search"]:focus {
 }
 
 #filters button,
-#span-tabs button {
+#span-tabs button,
+#days-filter button {
   min-height: 36px;
   padding: 0 14px;
   background: var(--card);
@@ -255,7 +260,8 @@ input[type="search"]:focus {
 }
 
 #filters button[aria-pressed="true"],
-#span-tabs button[aria-pressed="true"] {
+#span-tabs button[aria-pressed="true"],
+#days-filter button[aria-pressed="true"] {
   background: var(--lavender);
   color: var(--on-a2);
 }
@@ -1094,7 +1100,7 @@ li,
 
 .preview .pv-title {
   padding: 0 3px;
-  background: linear-gradient(transparent 55%, var(--hl) 55%);
+  background: linear-gradient(transparent var(--hl-from), var(--hl) var(--hl-from));
   font-size: 13px;
   font-weight: 800;
 }
@@ -1168,16 +1174,6 @@ li,
   color: var(--star);
 }
 
-.preview .pv-chip {
-  align-self: flex-start;
-  padding: 1px 6px;
-  background: var(--date-color);
-  border-radius: min(999px, calc(999px * var(--rs)));
-  color: var(--on-accent);
-  font-size: 10px;
-  font-weight: 800;
-}
-
 .preview .pv-tabs {
   display: flex;
   margin-top: 2px;
@@ -1204,11 +1200,27 @@ li,
   margin-top: 4px;
 }
 
-#opt-preview .detail-row button {
-  flex: 1;
-}
-
 #preview-choose {
   background: var(--pink);
   color: var(--on-a1);
+}
+
+#days-filter {
+  margin-top: 8px;
+}
+
+/* 테마 미리보기 아래 단추: 이전 / 이 테마로 선택 / 다음 */
+.preview-nav #preview-prev,
+.preview-nav #preview-next {
+  flex: 1;
+}
+
+.preview-nav #preview-choose {
+  flex: 2;
+}
+
+#opt-preview h2 small {
+  color: var(--gray);
+  font-size: 13px;
+  font-weight: 700;
 }
