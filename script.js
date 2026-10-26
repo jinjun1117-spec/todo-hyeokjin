@@ -9,6 +9,7 @@ function byId(id) {
   return document.getElementById(id);
 }
 
+const pageTitle = byId('page-title');
 const dayText = byId('day-text');
 const dayDday = byId('day-dday');
 const input = byId('todo-input');
@@ -28,6 +29,7 @@ const calDayTitle = byId('cal-day-title');
 const calendarList = byId('calendar-list');
 const calendarEmpty = byId('calendar-empty');
 const searchInput = byId('search-input');
+const rangeButtons = document.querySelectorAll('#range button');
 const daysList = byId('days-list');
 const daysEmpty = byId('days-empty');
 const todayText = byId('today');
@@ -47,6 +49,13 @@ const detailMemo = byId('detail-memo');
 const detailImportant = byId('detail-important');
 const detailDone = byId('detail-done');
 
+const TAB_TITLES = {
+  todo: '할 일 목록',
+  calendar: '캘린더',
+  days: '날짜별 목록',
+};
+const CALENDAR_CHIPS = 3;
+
 const EMPTY_TEXT = {
   all: '이 날 할 일이 없어요',
   important: '중요한 할 일이 없어요',
@@ -59,6 +68,7 @@ let activeTab = 'todo';
 let viewDate = todayString();
 let filter = 'all';
 let query = '';
+let range = 'upcoming';
 let removed = [];
 let toastTimer = null;
 let detailId = null;
@@ -407,15 +417,21 @@ function renderCalendarTab() {
 
     const number = document.createElement('span');
     number.textContent = day;
-    const dots = document.createElement('span');
-    dots.className = 'dots';
-    items.slice(0, 3).forEach(function (t) {
-      const dot = document.createElement('span');
-      dot.className = 'dot' + (t.done ? ' finished' : '');
-      dot.style.setProperty('--date-color', dateColor(due));
-      dots.append(dot);
+    number.className = 'number';
+    cell.append(number);
+    items.slice(0, CALENDAR_CHIPS).forEach(function (t) {
+      const chip = document.createElement('span');
+      chip.className = 'chip' + (t.done ? ' finished' : '');
+      chip.style.setProperty('--date-color', dateColor(due));
+      chip.textContent = t.text;
+      cell.append(chip);
     });
-    cell.append(number, dots);
+    if (items.length > CALENDAR_CHIPS) {
+      const more = document.createElement('span');
+      more.className = 'more';
+      more.textContent = '+' + (items.length - CALENDAR_CHIPS);
+      cell.append(more);
+    }
     cell.addEventListener('click', function () {
       selectedDate = due;
       render();
@@ -432,7 +448,9 @@ function renderCalendarTab() {
 
 function renderDaysTab() {
   const word = query.trim().toLowerCase();
+  const today = todayString();
   const matches = todos.filter(function (t) {
+    if (range === 'upcoming' && t.due < today) return false;
     return !word || t.text.toLowerCase().includes(word);
   });
 
@@ -465,8 +483,18 @@ function renderDaysTab() {
     return group;
   }));
 
-  daysEmpty.textContent = word && todos.length > 0 ? '검색 결과가 없어요' : '아직 할 일이 없어요';
+  if (todos.length === 0) {
+    daysEmpty.textContent = '아직 할 일이 없어요';
+  } else if (word) {
+    daysEmpty.textContent = '검색 결과가 없어요';
+  } else {
+    daysEmpty.textContent = '오늘부터 할 일이 없어요';
+  }
   daysEmpty.hidden = matches.length > 0;
+
+  rangeButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.range === range));
+  });
 }
 
 function render() {
@@ -480,6 +508,8 @@ function render() {
   tabButtons.forEach(function (b) {
     b.setAttribute('aria-selected', String(b.dataset.tab === activeTab));
   });
+  pageTitle.textContent = TAB_TITLES[activeTab];
+  document.title = TAB_TITLES[activeTab];
 }
 
 function switchTab(name) {
@@ -562,6 +592,12 @@ searchInput.addEventListener('input', function () {
 filterButtons.forEach(function (b) {
   b.addEventListener('click', function () {
     filter = b.dataset.filter;
+    render();
+  });
+});
+rangeButtons.forEach(function (b) {
+  b.addEventListener('click', function () {
+    range = b.dataset.range;
     render();
   });
 });

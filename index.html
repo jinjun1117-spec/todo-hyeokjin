@@ -10,7 +10,7 @@
   <header id="top">
     <div>
       <p id="today"></p>
-      <h1>할 일 목록</h1>
+      <h1 id="page-title">할 일 목록</h1>
     </div>
     <button type="button" id="theme-button" aria-label="다크 모드로 바꾸기">🌙</button>
   </header>
@@ -71,8 +71,11 @@
     </section>
 
     <section id="tab-days" role="tabpanel" aria-label="날짜별 목록" hidden>
-      <h2>📋 날짜별 목록</h2>
       <input type="search" id="search-input" placeholder="할 일 찾기" aria-label="할 일 찾기" autocomplete="off">
+      <div id="range">
+        <button type="button" data-range="upcoming" aria-pressed="true">오늘부터</button>
+        <button type="button" data-range="all" aria-pressed="false">지난 날짜 함께 보기</button>
+      </div>
       <div id="days-list"></div>
       <p id="days-empty" class="empty">아직 할 일이 없어요</p>
     </section>

@@ -208,14 +208,16 @@ input[type="search"]:focus {
 }
 
 /* 보기 고르기 */
-#filters {
+#filters,
+#range {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 22px;
 }
 
-#filters button {
+#filters button,
+#range button {
   min-height: 36px;
   padding: 0 14px;
   background: var(--card);
@@ -225,7 +227,8 @@ input[type="search"]:focus {
   font-size: 14px;
 }
 
-#filters button[aria-pressed="true"] {
+#filters button[aria-pressed="true"],
+#range button[aria-pressed="true"] {
   background: var(--lavender);
   color: #2d2a45;
 }
@@ -527,9 +530,9 @@ dialog textarea {
 
 #cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  padding: 10px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  padding: 8px 6px;
   background: var(--card);
   border: 2px solid var(--lavender);
   border-radius: 20px;
@@ -549,18 +552,22 @@ dialog textarea {
   color: var(--rose);
 }
 
+/* 날짜 칸: 높이를 모두 같게 하고, 넘치는 것은 잘라서 스크롤이 생기지 않게 한다 */
 #cal-grid .cal-day {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
   gap: 2px;
-  min-height: 52px;
-  padding: 6px 0 4px;
+  min-width: 0;
+  height: 96px;
+  min-height: 0;
+  padding: 4px 2px;
+  overflow: hidden;
   background: transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--ink);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -577,21 +584,38 @@ dialog textarea {
   color: #2d2a45;
 }
 
-#cal-grid .dots {
-  display: flex;
-  gap: 3px;
-  min-height: 8px;
+#cal-grid .cal-day .number {
+  align-self: center;
+  line-height: 18px;
 }
 
-#cal-grid .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+#cal-grid .chip {
+  display: block;
+  height: 16px;
+  padding: 0 3px;
+  overflow: hidden;
   background: var(--date-color);
+  border-radius: 4px;
+  color: #2d2a45;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-#cal-grid .dot.finished {
-  opacity: 0.4;
+#cal-grid .chip.finished {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+#cal-grid .more {
+  color: var(--gray);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 14px;
+  text-align: center;
 }
 
 #cal-day {
