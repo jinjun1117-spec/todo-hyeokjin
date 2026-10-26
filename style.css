@@ -1,0 +1,137 @@
+:root {
+  --blue: #3182f6;
+  --blue-dark: #1b64da;
+  --ink: #191f28;
+  --gray: #8b95a1;
+  --line: #e5e8eb;
+  --bg: #f4f7fb;
+  --card: #ffffff;
+  --red: #f04452;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  max-width: 480px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 8px 4px 20px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* 입력 칸 + 추가 버튼 */
+body > div {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(25, 31, 40, 0.06);
+}
+
+input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+input[type="text"]::placeholder {
+  color: var(--gray);
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: var(--card);
+}
+
+button {
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#add-button {
+  padding: 0 20px;
+  background: var(--blue);
+  color: #fff;
+}
+
+#add-button:hover,
+#add-button:active {
+  background: var(--blue-dark);
+}
+
+/* 할 일 목록 */
+ul {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 6px 8px 6px 16px;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(25, 31, 40, 0.05);
+}
+
+li input[type="checkbox"] {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--blue);
+}
+
+li span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+
+li button {
+  flex: none;
+  min-width: 56px;
+  background: transparent;
+  color: var(--red);
+}
+
+li button:hover,
+li button:active {
+  background: #fff0f1;
+}
+
+/* 비어 있을 때 */
+#empty-message {
+  margin: 28px 0 0;
+  text-align: center;
+  color: var(--gray);
+  font-size: 15px;
+}
