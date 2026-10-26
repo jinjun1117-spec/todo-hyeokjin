@@ -755,3 +755,20 @@ dialog textarea {
   background: var(--pink);
   color: #2d2a45;
 }
+
+/* 상세 창: 날짜 옮기기 */
+.detail-caption {
+  margin: 14px 4px 0;
+  color: var(--gray);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.detail-move {
+  flex-wrap: wrap;
+}
+
+.detail-move button {
+  flex: 1 1 40%;
+  font-size: 14px;
+}

@@ -97,7 +97,7 @@ let viewDate = todayString();
 let filter = 'all';
 let query = '';
 let range = 'upcoming';
-let removed = [];
+let undoAction = null;
 let toastTimer = null;
 let detailId = null;
 let calYear = new Date().getFullYear();
@@ -277,14 +277,18 @@ function toggleSamples() {
 
 /* 지운 할 일은 원래 자리(순서)와 함께 기억해 둔다 */
 function removeTodos(shouldRemove, message) {
-  removed = [];
+  const removed = [];
   todos.forEach(function (t, index) {
     if (shouldRemove(t)) removed.push({ todo: t, index: index });
   });
   todos = todos.filter(function (t) { return !shouldRemove(t); });
   save();
   render();
-  showToast(message);
+  showToast(message, function () {
+    removed.forEach(function (r) {
+      todos.splice(Math.min(r.index, todos.length), 0, r.todo);
+    });
+  });
 }
 
 function deleteTodo(id) {
@@ -297,17 +301,16 @@ function clearDone() {
   removeTodos(function (t) { return t.due === day && t.done; }, doneCount + '개 지웠어요');
 }
 
-function undoRemove() {
-  removed.forEach(function (r) {
-    todos.splice(Math.min(r.index, todos.length), 0, r.todo);
-  });
-  removed = [];
+function undo() {
+  const action = undoAction;
   hideToast();
+  if (action) action();
   save();
   render();
 }
 
-function showToast(message) {
+function showToast(message, undoWith) {
+  undoAction = undoWith;
   toastText.textContent = message;
   (popup.open ? popup : document.body).append(toast);
   toast.hidden = false;
@@ -318,7 +321,7 @@ function showToast(message) {
 function hideToast() {
   clearTimeout(toastTimer);
   toast.hidden = true;
-  removed = [];
+  undoAction = null;
 }
 
 /* 상세 창 */
@@ -343,27 +346,52 @@ function openDetail(id) {
   detailMemo.value = todo.memo;
   setDetailImportant(todo.important);
   setDetailDone(todo.done);
+  byId('detail-today').hidden = todo.due === todayString();
   detail.showModal();
 }
 
-function saveDetail() {
-  const todo = findTodo(detailId);
+// 창에서 고친 값을 할 일에 옮긴다. 제목이 비어 있으면 옮기지 않고 false를 돌려준다
+function applyDetail(todo) {
   const title = detailTitle.value.trim();
-  if (!todo) {
-    detail.close();
-    return;
-  }
   if (!title) {
     detailTitle.focus();
-    return;
+    return false;
   }
   todo.text = title;
   todo.memo = detailMemo.value.trim();
   todo.important = detailImportant.getAttribute('aria-pressed') === 'true';
   todo.done = detailDone.getAttribute('aria-pressed') === 'true';
+  return true;
+}
+
+function saveDetail() {
+  const todo = findTodo(detailId);
+  if (!todo) {
+    detail.close();
+    return;
+  }
+  if (!applyDetail(todo)) return;
   detail.close();
   save();
   render();
+}
+
+// 날짜 옮기기: 오늘과 그 할 일 날짜 중 더 뒤인 날을 기준으로 며칠 뒤로 보낸다(0이면 오늘로)
+function moveDetail(days, label) {
+  const todo = findTodo(detailId);
+  if (!todo) {
+    detail.close();
+    return;
+  }
+  if (!applyDetail(todo)) return;
+  const oldDue = todo.due;
+  const today = todayString();
+  const base = todo.due > today ? todo.due : today;
+  todo.due = days === 0 ? today : addDays(base, days);
+  detail.close();
+  save();
+  render();
+  showToast(label + ': ' + dateText(todo.due), function () { todo.due = oldDue; });
 }
 
 function deleteFromDetail() {
@@ -749,7 +777,7 @@ function toggleTheme() {
 /* 버튼과 칸에 동작 달기 */
 enableDrag(list);
 enableDrag(popupList);
-undoButton.addEventListener('click', undoRemove);
+undoButton.addEventListener('click', undo);
 themeButton.addEventListener('click', toggleTheme);
 addButton.addEventListener('click', addTodo);
 input.addEventListener('keydown', function (e) {
@@ -812,6 +840,9 @@ detailImportant.addEventListener('click', function () {
 detailDone.addEventListener('click', function () {
   setDetailDone(detailDone.getAttribute('aria-pressed') !== 'true');
 });
+byId('detail-tomorrow').addEventListener('click', function () { moveDetail(1, '미뤘어요'); });
+byId('detail-nextweek').addEventListener('click', function () { moveDetail(7, '미뤘어요'); });
+byId('detail-today').addEventListener('click', function () { moveDetail(0, '옮겼어요'); });
 byId('detail-save').addEventListener('click', saveDetail);
 byId('detail-cancel').addEventListener('click', function () { detail.close(); });
 byId('detail-delete').addEventListener('click', deleteFromDetail);
