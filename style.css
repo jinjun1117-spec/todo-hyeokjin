@@ -559,8 +559,8 @@ dialog textarea {
 #cal-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 3px;
-  padding: 8px 6px;
+  gap: 2px;
+  padding: 8px 4px;
   background: var(--card);
   border: 2px solid var(--lavender);
   border-radius: 20px;
@@ -588,9 +588,9 @@ dialog textarea {
   justify-content: flex-start;
   gap: 2px;
   min-width: 0;
-  height: 96px;
+  height: 66px;
   min-height: 0;
-  padding: 4px 2px;
+  padding: 4px 1px;
   overflow: hidden;
   background: transparent;
   border-radius: 10px;
@@ -620,30 +620,22 @@ dialog textarea {
 #cal-grid .chip {
   display: block;
   height: 16px;
-  padding: 0 3px;
+  padding: 0 1px;
   overflow: hidden;
   background: var(--date-color);
   border-radius: 4px;
   color: #2d2a45;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   line-height: 16px;
-  text-align: left;
-  text-overflow: ellipsis;
+  text-align: center;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
-#cal-grid .chip.finished {
-  opacity: 0.45;
-  text-decoration: line-through;
-}
-
-#cal-grid .more {
-  color: var(--gray);
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 14px;
-  text-align: center;
+#cal-grid .chip.important {
+  background: var(--star);
 }
 
 /* 날짜 줄 (할 일 탭) */

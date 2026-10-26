@@ -57,8 +57,7 @@ const TAB_TITLES = {
   calendar: '캘린더',
   days: '날짜별 목록',
 };
-const CALENDAR_CHIPS = 2;
-const POPUP_ITEMS = 3;
+const POPUP_ITEMS = 5;
 
 // 테스트 할 일: [오늘에서 며칠 뒤인지, 제목, 중요, 완료, 메모]. 5개짜리 날이 두 번(오늘, +2일) 있다
 const SAMPLE_TODOS = [
@@ -152,10 +151,16 @@ function dateColor(due) {
   return DATE_COLORS[dayNumber % DATE_COLORS.length];
 }
 
-// 중요(★)한 할 일을 위로 올린다. 같은 무리 안에서는 원래 순서를 지킨다
-function importanceFirst(items) {
-  return items.filter(function (t) { return t.important; })
-    .concat(items.filter(function (t) { return !t.important; }));
+// 보이는 순서: 중요한 진행 중(0) → 나머지 진행 중(1) → 중요한 완료(2) → 나머지 완료(3)
+function bucketOf(todo) {
+  return (todo.done ? 2 : 0) + (todo.important ? 0 : 1);
+}
+
+// 같은 무리 안에서는 배열(내가 정한) 순서를 지킨다
+function orderTodos(items) {
+  return [0, 1, 2, 3].reduce(function (all, bucket) {
+    return all.concat(items.filter(function (t) { return bucketOf(t) === bucket; }));
+  }, []);
 }
 
 /* 저장하고 불러오기 */
@@ -410,10 +415,10 @@ function makeButton(label, className, onClick) {
   return button;
 }
 
-/* 끌어서 순서 바꾸기: 손잡이를 잡고 끌거나, 손잡이에서 ↑ ↓ 키를 누른다.
-   중요한 것끼리, 나머지끼리만 자리를 바꿀 수 있다. */
+/* 끌어서 순서 바꾸기(할 일 탭 목록만): 손잡이를 잡고 끌거나, 손잡이에서 ↑ ↓ 키를 누른다.
+   같은 무리(보이는 순서의 ①~④)끼리만 자리를 바꿀 수 있다. */
 function samePart(a, b) {
-  return a.dataset.important === b.dataset.important;
+  return a.dataset.bucket === b.dataset.bucket;
 }
 
 // 화면에 보이는 순서(li 차례)를 할 일 배열 순서에 반영한다
@@ -505,15 +510,12 @@ function enableDrag(ul) {
 }
 
 // 한 줄에는 날짜·디데이를 보여 주지 않는다. 날짜는 왼쪽 띠 색으로만 나타낸다
-function makeItem(todo) {
+function makeItem(todo, sortable) {
   const li = document.createElement('li');
   if (todo.done) li.classList.add('done');
   li.style.setProperty('--date-color', dateColor(todo.due));
   li.dataset.id = String(todo.id);
-  li.dataset.important = String(todo.important);
-
-  const grip = makeButton('≡', 'handle', function () {});
-  grip.setAttribute('aria-label', '순서 바꾸기: ' + todo.text);
+  li.dataset.bucket = String(bucketOf(todo));
 
   const check = document.createElement('input');
   check.type = 'checkbox';
@@ -541,7 +543,12 @@ function makeItem(todo) {
   const del = makeButton('삭제', 'delete', function () { deleteTodo(todo.id); });
   del.setAttribute('aria-label', '삭제: ' + todo.text);
 
-  li.append(grip, check, main, star, del);
+  if (sortable) {
+    const grip = makeButton('≡', 'handle', function () {});
+    grip.setAttribute('aria-label', '순서 바꾸기: ' + todo.text);
+    li.append(grip);
+  }
+  li.append(check, main, star, del);
   return li;
 }
 
@@ -551,14 +558,14 @@ function renderTodoTab() {
   dayDday.style.setProperty('--date-color', dateColor(viewDate));
 
   const dayItems = todos.filter(function (t) { return t.due === viewDate; });
-  const shown = importanceFirst(dayItems).filter(function (t) {
+  const shown = orderTodos(dayItems).filter(function (t) {
     if (filter === 'important') return t.important;
     if (filter === 'active') return !t.done;
     if (filter === 'done') return t.done;
     return true;
   });
 
-  list.replaceChildren(...shown.map(makeItem));
+  list.replaceChildren(...shown.map(function (t) { return makeItem(t, true); }));
 
   emptyMessage.textContent = dayItems.length === 0 ? EMPTY_TEXT.all : EMPTY_TEXT[filter];
   emptyMessage.hidden = shown.length > 0;
@@ -598,7 +605,9 @@ function renderCalendarTab() {
   const today = todayString();
   for (let day = 1; day <= daysInMonth; day++) {
     const due = dueString(calYear, calMonth, day);
-    const items = importanceFirst(todos.filter(function (t) { return t.due === due; }));
+    const items = todos.filter(function (t) { return t.due === due; });
+    const importantCount = items.filter(function (t) { return t.important; }).length;
+    const normalCount = items.length - importantCount;
 
     const cell = document.createElement('button');
     cell.type = 'button';
@@ -606,26 +615,28 @@ function renderCalendarTab() {
     if ((firstWeekday + day - 1) % 7 === 0) cell.classList.add('sun');
     if (due === today) cell.classList.add('today');
     if (due === selectedDate) cell.classList.add('selected');
-    cell.setAttribute('aria-label', dateText(due) + (items.length ? ', 할 일 ' + items.length + '개' : ''));
+    cell.setAttribute('aria-label', dateText(due) + (items.length
+      ? ', 중요 ' + importantCount + '건, 할 일 ' + normalCount + '건' : ''));
     cell.setAttribute('aria-pressed', String(due === selectedDate));
     cell.dataset.date = due;
 
     const number = document.createElement('span');
-    number.textContent = day;
     number.className = 'number';
+    number.textContent = day;
     cell.append(number);
-    items.slice(0, CALENDAR_CHIPS).forEach(function (t) {
+    // 칸 안에는 "중요 N건"과 "할 일 N건" 두 칸만 보인다(0건인 칸은 뺀다)
+    if (importantCount > 0) {
       const chip = document.createElement('span');
-      chip.className = 'chip' + (t.done ? ' finished' : '');
-      chip.style.setProperty('--date-color', dateColor(due));
-      chip.textContent = t.text;
+      chip.className = 'chip important';
+      chip.textContent = '중요 ' + importantCount + '건';
       cell.append(chip);
-    });
-    if (items.length > CALENDAR_CHIPS) {
-      const more = document.createElement('span');
-      more.className = 'more';
-      more.textContent = '+' + (items.length - CALENDAR_CHIPS);
-      cell.append(more);
+    }
+    if (normalCount > 0) {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.style.setProperty('--date-color', dateColor(due));
+      chip.textContent = '할 일 ' + normalCount + '건';
+      cell.append(chip);
     }
     cell.addEventListener('click', function () { openPopup(due); });
     cells.push(cell);
@@ -643,9 +654,9 @@ function openPopup(due) {
 
 function renderPopup() {
   if (!popupDate) return;
-  const items = importanceFirst(todos.filter(function (t) { return t.due === popupDate; }));
+  const items = orderTodos(todos.filter(function (t) { return t.due === popupDate; }));
   popupTitle.textContent = dateText(popupDate) + ' · ' + ddayText(popupDate);
-  popupList.replaceChildren(...items.slice(0, POPUP_ITEMS).map(makeItem));
+  popupList.replaceChildren(...items.slice(0, POPUP_ITEMS).map(function (t) { return makeItem(t); }));
   popupEmpty.hidden = items.length > 0;
   const more = items.length - POPUP_ITEMS;
   popupOpen.textContent = more > 0 ? '이 날짜 할 일 보기 (' + more + '개 더)' : '이 날짜 할 일 보기';
@@ -666,7 +677,7 @@ function renderDaysTab() {
   dates.sort();
 
   daysList.replaceChildren(...dates.map(function (due) {
-    const items = importanceFirst(matches.filter(function (t) { return t.due === due; }));
+    const items = orderTodos(matches.filter(function (t) { return t.due === due; }));
 
     const group = document.createElement('div');
     group.className = 'day-group';
@@ -682,8 +693,7 @@ function renderDaysTab() {
     head.append(title, total);
 
     const itemList = document.createElement('ul');
-    itemList.append(...items.map(makeItem));
-    enableDrag(itemList);
+    itemList.append(...items.map(function (t) { return makeItem(t); }));
 
     group.append(head, itemList);
     return group;
@@ -776,7 +786,6 @@ function toggleTheme() {
 
 /* 버튼과 칸에 동작 달기 */
 enableDrag(list);
-enableDrag(popupList);
 undoButton.addEventListener('click', undo);
 themeButton.addEventListener('click', toggleTheme);
 addButton.addEventListener('click', addTodo);
