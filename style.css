@@ -1278,12 +1278,6 @@ li,
   font-weight: 400;
 }
 
-#day-text::after {
-  content: " ▾";
-  color: var(--gray);
-  font-size: 13px;
-}
-
 #jump-dialog .picker-head strong {
   font-size: 16px;
 }
@@ -1363,4 +1357,125 @@ li,
   font-size: 13px;
   font-weight: 700;
   text-align: right;
+}
+
+/* 할 일 탭 날짜 줄: 작고 단정하게 가운데 정렬 */
+#day-bar {
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+#day-bar button {
+  min-width: 38px;
+  min-height: 38px;
+  font-size: 18px;
+}
+
+#day-bar #day-label {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 38px;
+  padding: 0 4px;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+
+#day-bar #day-today {
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+#day-text {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+#day-dday {
+  padding: 0 7px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* 줄글이 잘리지 않고 줄바꿈되어 보이게 */
+li .memo {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+#toast {
+  align-items: center;
+  padding: 8px 8px 8px 16px;
+}
+
+#toast-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+/* 상세 창: 눌린(선택된) 날짜 옮기기 버튼 */
+.detail-move button[aria-pressed="true"] {
+  background: var(--pink);
+  color: var(--on-a1);
+}
+
+/* 완료율 카드 머리줄 */
+.stats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#cal-stats .stats-head h3 {
+  margin: 0;
+}
+
+#cal-stats-toggle {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  background: var(--field);
+  border-radius: min(999px, calc(999px * var(--rs)));
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* 날짜별 목록: "할 일만 보기" 스위치(알약이 아닌 점선 네모 + 체크 칸) */
+#span-tabs #days-has {
+  margin-left: auto;
+  padding: 0 12px;
+  background: transparent;
+  border: 2px dashed var(--lavender);
+  border-radius: calc(8px * var(--rs));
+  color: var(--gray);
+  font-weight: 700;
+}
+
+#span-tabs #days-has .box {
+  font-size: 15px;
+}
+
+#span-tabs #days-has[aria-pressed="true"] {
+  background: var(--pink);
+  border-style: solid;
+  border-color: var(--pink);
+  color: var(--on-a1);
+}
+
+/* 날짜별 목록: 접기·펴기 글자 */
+.day-head .fold-label {
+  flex: none;
+  padding-left: 4px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: underline;
 }

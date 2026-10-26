@@ -250,7 +250,6 @@ const detailPicker = byId('detail-picker');
 const pickerTitle = byId('picker-title');
 const pickerGrid = byId('picker-grid');
 const detailPick = byId('detail-pick');
-const detailPending = byId('detail-pending');
 
 const TAB_TITLES = {
   calendar: '캘린더',
@@ -309,6 +308,7 @@ let toastTimer = null;
 let detailId = null;
 let pendingDue = null;
 let pendingLabel = '';
+let pendingKind = null;
 let pickerYear = 0;
 let pickerMonth = 0;
 let calYear = new Date().getFullYear();
@@ -842,7 +842,7 @@ function openDetail(id) {
   setDetailImportant(todo.important);
   setDetailDone(todo.done);
   setPicker(false);
-  setPending(null, '');
+  setPending(null, '', null);
   detail.showModal();
 }
 
@@ -903,22 +903,27 @@ function moveDetailTo(target, label) {
   });
 }
 
-// 옮길 날짜를 정해 두기만 한다. 실제로 바뀌는 것은 "저장"을 눌렀을 때다
-function setPending(due, label) {
+// 옮길 날짜를 정해 두기만 한다. 실제로 바뀌는 것은 "저장"을 눌렀을 때다.
+// kind: 'tomorrow'(내일로 미루기 버튼이 눌림) / 'pick'(달력에서 고른 날짜가 선택됨) / null(정한 것 없음)
+function setPending(due, label, kind) {
   pendingDue = due;
   pendingLabel = label;
-  detailPending.hidden = !due;
-  byId('detail-pending-text').textContent = due ? '옮길 날짜: ' + dateText(due) + ' · 저장을 눌러야 바뀌어요' : '';
+  pendingKind = due ? kind : null;
+  byId('detail-tomorrow').setAttribute('aria-pressed', String(pendingKind === 'tomorrow'));
+  detailPick.setAttribute('aria-pressed', String(pendingKind === 'pick'));
   if (!detailPicker.hidden) renderPicker();
 }
 
-// 내일로 미루기: 오늘과 그 할 일 날짜 중 더 뒤인 날의 다음 날을 옮길 날짜로 정한다
+// 내일로 미루기: 오늘과 그 할 일 날짜 중 더 뒤인 날의 다음 날을 정한다(다시 누르면 풀린다)
 function postponeToTomorrow() {
   const todo = findTodo(detailId);
   if (!todo) return;
+  if (pendingKind === 'tomorrow') {
+    setPending(null, '', null);
+    return;
+  }
   const today = todayString();
-  setPicker(false);
-  setPending(addDays(todo.due > today ? todo.due : today, 1), '미뤘어요');
+  setPending(addDays(todo.due > today ? todo.due : today, 1), '미뤘어요', 'tomorrow');
 }
 
 /* 날짜로 미루기: 창 안에 펼쳐지는 작은 달력 */
@@ -1006,12 +1011,12 @@ function moveJump(step) {
   renderJump();
 }
 
-// 달력에서 날짜를 누르면 옮길 날짜로 정하고 달력을 접는다(지금 날짜를 누르면 정한 것이 없어진다)
+// 달력에서 날짜를 누르면 그 날짜가 선택된 모습으로 남는다(달력은 펼쳐진 채).
+// 이미 선택한 날짜나 지금 날짜를 누르면 선택이 풀린다
 function pickDate(due) {
   const todo = findTodo(detailId);
-  setPicker(false);
-  if (todo && todo.due === due) setPending(null, '');
-  else setPending(due, '옮겼어요');
+  if ((todo && todo.due === due) || (pendingKind === 'pick' && pendingDue === due)) setPending(null, '', null);
+  else setPending(due, '옮겼어요', 'pick');
 }
 
 function movePicker(step) {
@@ -1288,16 +1293,31 @@ function renderCalendarTab() {
 // 달력 아래 완료율: 그 달 전체와, 달력에 보이는 주마다(첫째 주, 둘째 주…) 끝낸 비율
 const WEEK_NAMES = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째'];
 
+// statsOpen이 false이면 "N월 전체"와 "이번 주"만, true이면 모든 주를 보여 준다
+let statsOpen = false;
+
 function renderCalendarStats(firstWeekday, daysInMonth) {
   const weeks = Math.ceil((firstWeekday + daysInMonth) / 7);
+  const now = new Date();
+  const hasToday = now.getFullYear() === calYear && now.getMonth() === calMonth;
+  const todayWeek = hasToday ? Math.floor((firstWeekday + now.getDate() - 1) / 7) : -1;
   const rows = [{ label: (calMonth + 1) + '월 전체', from: 1, to: daysInMonth, total: true }];
   for (let w = 0; w < weeks; w++) {
+    if (!statsOpen && w !== todayWeek) continue;
+    const from = Math.max(1, w * 7 - firstWeekday + 1);
+    const to = Math.min(daysInMonth, (w + 1) * 7 - firstWeekday);
+    const span = (calMonth + 1) + '/' + from + '~' + (calMonth + 1) + '/' + to;
     rows.push({
-      label: WEEK_NAMES[w] + ' 주',
-      from: Math.max(1, w * 7 - firstWeekday + 1),
-      to: Math.min(daysInMonth, (w + 1) * 7 - firstWeekday),
+      // 닫혀 있을 때는 "이번 주", 펼치면 "다섯째 주"처럼 차례 이름(이번 주는 날짜 옆에 표시)
+      label: statsOpen ? WEEK_NAMES[w] + ' 주' : '이번 주',
+      note: statsOpen ? (w === todayWeek ? '이번 주 · ' : '') + span : WEEK_NAMES[w] + ' 주 · ' + span,
+      from: from,
+      to: to,
     });
   }
+  const toggleButton = byId('cal-stats-toggle');
+  toggleButton.textContent = statsOpen ? '접기' : '전체 보기';
+  toggleButton.setAttribute('aria-expanded', String(statsOpen));
   byId('cal-stats-title').textContent = calYear + '년 ' + (calMonth + 1) + '월 완료율';
   byId('cal-stats-list').replaceChildren(...rows.map(function (row) {
     const first = dueString(calYear, calMonth, row.from);
@@ -1314,7 +1334,7 @@ function renderCalendarStats(firstWeekday, daysInMonth) {
     name.textContent = row.label;
     const range = document.createElement('small');
     range.className = 'stat-range';
-    range.textContent = row.total ? '' : (calMonth + 1) + '/' + row.from + '~' + (calMonth + 1) + '/' + row.to;
+    range.textContent = row.total ? '' : row.note;
     name.append(range);
     const bar = document.createElement('span');
     bar.className = 'stat-bar';
@@ -1408,7 +1428,7 @@ function renderDaysTab() {
     const group = document.createElement('div');
     group.className = 'day-group';
 
-    // 제목 줄: 왼쪽 부분을 누르면 접고 펴고, 오른쪽 "보기 ›"를 누르면 그 날짜의 할 일 탭으로 간다
+    // 제목 줄을 누르면 접고 편다(오른쪽에 "접기"/"펴기" 글자). 할 일이 없는 날은 접고 펼 것이 없다
     const folded = isFolded(due);
     const head = document.createElement('div');
     head.className = 'day-head' + (items.length === 0 ? ' empty-day' : '');
@@ -1419,25 +1439,23 @@ function renderDaysTab() {
       foldChoices.set(due, !isFolded(due));
       render();
     });
-    const arrow = document.createElement('span');
-    arrow.className = 'arrow';
-    if (items.length === 0) {
-      toggle.disabled = true;
-      arrow.textContent = '·';
-    } else {
-      toggle.setAttribute('aria-expanded', String(!folded));
-      arrow.textContent = folded ? '▸' : '▾';
-    }
     const title = document.createElement('span');
+    title.className = 'title';
     title.textContent = dateText(due) + ' · ' + ddayText(due);
     const total = document.createElement('span');
     total.className = 'count';
     total.textContent = items.length + '개';
-    toggle.append(arrow, title, total);
-
-    const go = makeButton('보기 ›', 'day-go', function () { openDay(due); });
-    go.setAttribute('aria-label', dateText(due) + ' 할 일 보기');
-    head.append(toggle, go);
+    toggle.append(title, total);
+    if (items.length === 0) {
+      toggle.disabled = true;
+    } else {
+      toggle.setAttribute('aria-expanded', String(!folded));
+      const fold = document.createElement('span');
+      fold.className = 'fold-label';
+      fold.textContent = folded ? '펴기' : '접기';
+      toggle.append(fold);
+    }
+    head.append(toggle);
 
     group.append(head);
     if (items.length > 0 && !folded) {
@@ -1451,6 +1469,7 @@ function renderDaysTab() {
   daysEmpty.textContent = word ? '검색 결과가 없어요' : '할 일이 있는 날짜가 없어요';
   daysEmpty.hidden = shownCount > 0;
   byId('days-has').setAttribute('aria-pressed', String(daysFilter === 'has'));
+  byId('days-has').querySelector('.box').textContent = daysFilter === 'has' ? '☑' : '☐';
   sampleButton.textContent = hasSamples() ? '🧪 테스트 할 일 지우기' : '🧪 테스트 할 일 20개 넣기';
 }
 
@@ -1770,6 +1789,10 @@ byId('confirm-dialog').addEventListener('click', function (e) {
   if (e.target === byId('confirm-dialog')) byId('confirm-dialog').close();
 });
 byId('confirm-dialog').addEventListener('close', function () { confirmAction = null; });
+byId('cal-stats-toggle').addEventListener('click', function () {
+  statsOpen = !statsOpen;
+  render();
+});
 byId('popup-close').addEventListener('click', function () { popup.close(); });
 popupOpen.addEventListener('click', function () {
   const due = popupDate;
@@ -1793,7 +1816,6 @@ detailDone.addEventListener('click', function () {
 });
 byId('detail-tomorrow').addEventListener('click', postponeToTomorrow);
 detailPick.addEventListener('click', function () { setPicker(detailPicker.hidden); });
-byId('detail-pending-clear').addEventListener('click', function () { setPending(null, ''); });
 byId('day-label').addEventListener('click', openJump);
 byId('jump-prev').addEventListener('click', function () { moveJump(-1); });
 byId('jump-next').addEventListener('click', function () { moveJump(1); });
@@ -1816,6 +1838,7 @@ detail.addEventListener('close', function () {
   detailId = null;
   pendingDue = null;
   pendingLabel = '';
+  pendingKind = null;
 });
 
 /* 설정(이름·테마)은 settings 표에도 저장한다. 글자를 칠 때마다 보내지 않게 조금 모아서 보낸다 */

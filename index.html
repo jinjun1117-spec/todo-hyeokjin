@@ -66,7 +66,10 @@
       </div>
       <div id="cal-grid"></div>
       <div id="cal-stats">
-        <h3 id="cal-stats-title">완료율</h3>
+        <div class="stats-head">
+          <h3 id="cal-stats-title">완료율</h3>
+          <button type="button" id="cal-stats-toggle" aria-expanded="false">전체 보기</button>
+        </div>
         <div id="cal-stats-list"></div>
       </div>
     </section>
@@ -115,9 +118,7 @@
       <div id="span-tabs" role="group" aria-label="보는 범위">
         <button type="button" data-span="week" aria-pressed="true">한주 보기</button>
         <button type="button" data-span="month" aria-pressed="false">한달 보기</button>
-      </div>
-      <div id="days-filter" role="group" aria-label="보여 줄 날짜">
-        <button type="button" id="days-has" aria-pressed="false">할 일 보기</button>
+        <button type="button" id="days-has" aria-pressed="false"><span class="box" aria-hidden="true">☐</span> 할 일만 보기</button>
       </div>
       <div id="span-nav">
         <button type="button" id="span-prev" aria-label="이전">‹</button>
@@ -191,10 +192,6 @@
       </div>
       <div id="picker-grid"></div>
     </div>
-    <p id="detail-pending" hidden>
-      <span id="detail-pending-text"></span>
-      <button type="button" id="detail-pending-clear">선택 취소</button>
-    </p>
     <div class="detail-row detail-actions">
       <button type="button" id="detail-delete">삭제</button>
       <button type="button" id="detail-cancel">취소</button>
