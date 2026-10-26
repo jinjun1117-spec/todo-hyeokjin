@@ -382,11 +382,110 @@ function makeButton(label, className, onClick) {
   return button;
 }
 
+/* 끌어서 순서 바꾸기: 손잡이를 잡고 끌거나, 손잡이에서 ↑ ↓ 키를 누른다.
+   중요한 것끼리, 나머지끼리만 자리를 바꿀 수 있다. */
+function samePart(a, b) {
+  return a.dataset.important === b.dataset.important;
+}
+
+// 화면에 보이는 순서(li 차례)를 할 일 배열 순서에 반영한다
+function commitOrder(li) {
+  const todo = todos.find(function (t) { return String(t.id) === li.dataset.id; });
+  if (!todo) return;
+  const next = li.nextElementSibling;
+  const prev = li.previousElementSibling;
+  const neighbor = next || prev;
+  const other = neighbor && todos.find(function (t) { return String(t.id) === neighbor.dataset.id; });
+  if (!other || other === todo) return;
+  todos.splice(todos.indexOf(todo), 1);
+  const at = todos.indexOf(other);
+  todos.splice(next ? at : at + 1, 0, todo);
+  save();
+  render();
+}
+
+function focusHandle(id) {
+  const li = document.querySelector('section:not([hidden]) li[data-id="' + id + '"], dialog[open] li[data-id="' + id + '"]');
+  if (li) li.querySelector('.handle').focus();
+}
+
+function enableDrag(ul) {
+  ul.addEventListener('pointerdown', function (e) {
+    const handle = e.target.closest('.handle');
+    const li = handle && handle.closest('li');
+    if (!li || li.parentNode !== ul) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    li.classList.add('dragging');
+
+    // 끄는 동안 줄 순서는 그대로 두고, 끄는 줄만 손가락을 따라 움직인다(자리 표시는 분홍 줄)
+    const startY = e.pageY;
+    let dropRow = null;
+    let dropBefore = true;
+
+    function clearMark() {
+      if (dropRow) dropRow.classList.remove('drop-before', 'drop-after');
+    }
+    function onMove(ev) {
+      if (ev.clientY < 80) window.scrollBy(0, -12);
+      if (ev.clientY > window.innerHeight - 140) window.scrollBy(0, 12);
+      li.style.transform = 'translateY(' + (ev.pageY - startY) + 'px)';
+      const rows = Array.from(ul.children).filter(function (row) {
+        return row !== li && samePart(row, li);
+      });
+      for (const row of rows) {
+        const box = row.getBoundingClientRect();
+        if (ev.clientY >= box.top && ev.clientY <= box.bottom) {
+          clearMark();
+          dropRow = row;
+          dropBefore = ev.clientY < box.top + box.height / 2;
+          row.classList.add(dropBefore ? 'drop-before' : 'drop-after');
+          break;
+        }
+      }
+    }
+    function onEnd() {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onEnd);
+      handle.removeEventListener('pointercancel', onEnd);
+      clearMark();
+      li.classList.remove('dragging');
+      li.style.transform = '';
+      if (dropRow) {
+        ul.insertBefore(li, dropBefore ? dropRow : dropRow.nextSibling);
+        commitOrder(li);
+      }
+    }
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onEnd);
+    handle.addEventListener('pointercancel', onEnd);
+  });
+
+  ul.addEventListener('keydown', function (e) {
+    const handle = e.target.closest('.handle');
+    if (!handle || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+    e.preventDefault();
+    const li = handle.closest('li');
+    const step = e.key === 'ArrowUp' ? 'previousElementSibling' : 'nextElementSibling';
+    const target = li[step];
+    if (!target || !samePart(target, li)) return;
+    ul.insertBefore(li, e.key === 'ArrowUp' ? target : target.nextSibling);
+    const id = li.dataset.id;
+    commitOrder(li);
+    focusHandle(id);
+  });
+}
+
 // 한 줄에는 날짜·디데이를 보여 주지 않는다. 날짜는 왼쪽 띠 색으로만 나타낸다
 function makeItem(todo) {
   const li = document.createElement('li');
   if (todo.done) li.classList.add('done');
   li.style.setProperty('--date-color', dateColor(todo.due));
+  li.dataset.id = String(todo.id);
+  li.dataset.important = String(todo.important);
+
+  const grip = makeButton('≡', 'handle', function () {});
+  grip.setAttribute('aria-label', '순서 바꾸기: ' + todo.text);
 
   const check = document.createElement('input');
   check.type = 'checkbox';
@@ -414,7 +513,7 @@ function makeItem(todo) {
   const del = makeButton('삭제', 'delete', function () { deleteTodo(todo.id); });
   del.setAttribute('aria-label', '삭제: ' + todo.text);
 
-  li.append(check, main, star, del);
+  li.append(grip, check, main, star, del);
   return li;
 }
 
@@ -556,6 +655,7 @@ function renderDaysTab() {
 
     const itemList = document.createElement('ul');
     itemList.append(...items.map(makeItem));
+    enableDrag(itemList);
 
     group.append(head, itemList);
     return group;
@@ -647,6 +747,8 @@ function toggleTheme() {
 }
 
 /* 버튼과 칸에 동작 달기 */
+enableDrag(list);
+enableDrag(popupList);
 undoButton.addEventListener('click', undoRemove);
 themeButton.addEventListener('click', toggleTheme);
 addButton.addEventListener('click', addTodo);

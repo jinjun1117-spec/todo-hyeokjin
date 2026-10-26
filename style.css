@@ -243,9 +243,9 @@ ul {
 li {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 12px;
-  padding: 6px 6px 6px 14px;
+  padding: 6px 6px 6px 8px;
   background: var(--card);
   border-left: 8px solid var(--date-color, var(--done-line));
   border-radius: 16px;
@@ -254,6 +254,31 @@ li {
 
 li.done {
   border-left-color: var(--done-line);
+}
+
+li button.handle {
+  min-width: 28px;
+  padding: 0;
+  color: var(--gray);
+  font-size: 22px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+li.dragging {
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 10px 28px rgba(45, 42, 69, 0.3);
+  opacity: 0.92;
+}
+
+li.drop-before {
+  box-shadow: 0 -5px 0 0 var(--pink), 0 3px 12px var(--shadow);
+}
+
+li.drop-after {
+  box-shadow: 0 5px 0 0 var(--pink), 0 3px 12px var(--shadow);
 }
 
 li input[type="checkbox"] {
