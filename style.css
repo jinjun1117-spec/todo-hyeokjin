@@ -1237,3 +1237,34 @@ li,
   background: var(--rose-soft);
   color: var(--rose);
 }
+
+/* 상세 창: 저장하면 바뀔 날짜 */
+#detail-pending {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  background: var(--field);
+  border-radius: calc(12px * var(--rs));
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#detail-pending-text {
+  flex: 1;
+}
+
+#detail-pending-clear {
+  flex: none;
+  min-height: 36px;
+  padding: 0 10px;
+  background: var(--card);
+  color: var(--gray);
+  font-size: 13px;
+}
+
+#picker-grid .pick-day.chosen {
+  background: var(--pink);
+  color: var(--on-a1);
+}

@@ -166,7 +166,7 @@
     <p class="detail-caption">날짜 옮기기</p>
     <div class="detail-row detail-move">
       <button type="button" id="detail-tomorrow">내일로 미루기</button>
-      <button type="button" id="detail-pick" aria-expanded="false">날짜로 미루기</button>
+      <button type="button" id="detail-pick" aria-expanded="false">날짜 선택하기</button>
     </div>
     <div id="detail-picker" hidden>
       <div class="picker-head">
@@ -176,6 +176,10 @@
       </div>
       <div id="picker-grid"></div>
     </div>
+    <p id="detail-pending" hidden>
+      <span id="detail-pending-text"></span>
+      <button type="button" id="detail-pending-clear">선택 취소</button>
+    </p>
     <div class="detail-row detail-actions">
       <button type="button" id="detail-delete">삭제</button>
       <button type="button" id="detail-cancel">취소</button>

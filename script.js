@@ -251,6 +251,7 @@ const detailPicker = byId('detail-picker');
 const pickerTitle = byId('picker-title');
 const pickerGrid = byId('picker-grid');
 const detailPick = byId('detail-pick');
+const detailPending = byId('detail-pending');
 
 const TAB_TITLES = {
   calendar: '캘린더',
@@ -307,6 +308,8 @@ let spanAnchor = todayString();
 let undoAction = null;
 let toastTimer = null;
 let detailId = null;
+let pendingDue = null;
+let pendingLabel = '';
 let pickerYear = 0;
 let pickerMonth = 0;
 let calYear = new Date().getFullYear();
@@ -840,6 +843,7 @@ function openDetail(id) {
   setDetailImportant(todo.important);
   setDetailDone(todo.done);
   setPicker(false);
+  setPending(null, '');
   detail.showModal();
 }
 
@@ -865,6 +869,11 @@ function saveDetail() {
   const todo = findTodo(detailId);
   if (!todo) {
     detail.close();
+    return;
+  }
+  // 옮길 날짜를 정해 둔 상태에서 "저장"을 누르면 그 날짜로 옮긴다
+  if (pendingDue && pendingDue !== todo.due) {
+    moveDetailTo(pendingDue, pendingLabel);
     return;
   }
   if (!applyDetail(todo)) return;
@@ -895,12 +904,22 @@ function moveDetailTo(target, label) {
   });
 }
 
-// 내일로 미루기: 오늘과 그 할 일 날짜 중 더 뒤인 날의 다음 날로 보낸다
+// 옮길 날짜를 정해 두기만 한다. 실제로 바뀌는 것은 "저장"을 눌렀을 때다
+function setPending(due, label) {
+  pendingDue = due;
+  pendingLabel = label;
+  detailPending.hidden = !due;
+  byId('detail-pending-text').textContent = due ? '옮길 날짜: ' + dateText(due) + ' · 저장을 눌러야 바뀌어요' : '';
+  if (!detailPicker.hidden) renderPicker();
+}
+
+// 내일로 미루기: 오늘과 그 할 일 날짜 중 더 뒤인 날의 다음 날을 옮길 날짜로 정한다
 function postponeToTomorrow() {
   const todo = findTodo(detailId);
   if (!todo) return;
   const today = todayString();
-  moveDetailTo(addDays(todo.due > today ? todo.due : today, 1), '미뤘어요');
+  setPicker(false);
+  setPending(addDays(todo.due > today ? todo.due : today, 1), '미뤘어요');
 }
 
 /* 날짜로 미루기: 창 안에 펼쳐지는 작은 달력 */
@@ -938,20 +957,20 @@ function renderPicker() {
     if ((firstWeekday + day - 1) % 7 === 0) cell.classList.add('sun');
     if (due === today) cell.classList.add('today');
     if (due === current) cell.classList.add('current');
+    if (due === pendingDue) cell.classList.add('chosen');
     cell.dataset.date = due;
-    cell.setAttribute('aria-label', dateText(due) + '로 옮기기');
+    cell.setAttribute('aria-label', dateText(due) + '로 정하기');
     cells.push(cell);
   }
   pickerGrid.replaceChildren(...cells);
 }
 
+// 달력에서 날짜를 누르면 옮길 날짜로 정하고 달력을 접는다(지금 날짜를 누르면 정한 것이 없어진다)
 function pickDate(due) {
   const todo = findTodo(detailId);
-  if (todo && todo.due === due) {
-    setPicker(false);
-    return;
-  }
-  moveDetailTo(due, '옮겼어요');
+  setPicker(false);
+  if (todo && todo.due === due) setPending(null, '');
+  else setPending(due, '옮겼어요');
 }
 
 function movePicker(step) {
@@ -1691,6 +1710,7 @@ detailDone.addEventListener('click', function () {
 });
 byId('detail-tomorrow').addEventListener('click', postponeToTomorrow);
 detailPick.addEventListener('click', function () { setPicker(detailPicker.hidden); });
+byId('detail-pending-clear').addEventListener('click', function () { setPending(null, ''); });
 byId('picker-prev').addEventListener('click', function () { movePicker(-1); });
 byId('picker-next').addEventListener('click', function () { movePicker(1); });
 byId('detail-save').addEventListener('click', saveDetail);
@@ -1702,7 +1722,11 @@ detailTitle.addEventListener('keydown', function (e) {
 detail.addEventListener('click', function (e) {
   if (e.target === detail) detail.close();
 });
-detail.addEventListener('close', function () { detailId = null; });
+detail.addEventListener('close', function () {
+  detailId = null;
+  pendingDue = null;
+  pendingLabel = '';
+});
 
 /* 설정(이름·테마)은 settings 표에도 저장한다. 글자를 칠 때마다 보내지 않게 조금 모아서 보낸다 */
 const settingTimers = {};
