@@ -10,8 +10,15 @@
   <h1>할 일 목록</h1>
 
   <div id="add-box">
-    <input type="text" id="todo-input" placeholder="할 일을 적어 보세요" maxlength="100" autocomplete="off">
-    <button type="button" id="add-button">추가</button>
+    <div class="row">
+      <input type="text" id="todo-input" placeholder="할 일을 적어 보세요" maxlength="100" autocomplete="off">
+      <button type="button" id="add-button">추가</button>
+    </div>
+    <div class="row">
+      <label for="due-input">마감일</label>
+      <input type="date" id="due-input">
+      <button type="button" id="important-toggle" aria-pressed="false">☆ 중요</button>
+    </div>
   </div>
 
   <div id="filters">

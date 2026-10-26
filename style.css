@@ -8,11 +8,21 @@
   --gray: #9a95b3;
   --bg: #fff5fb;
   --card: #ffffff;
+  --field: #f6f1ff;
   --rose: #d6336c;
+  --rose-soft: #ffe3ef;
+  --rose-soft-hover: #ffcfe2;
+  --done-line: #e3dff0;
+  --shadow: rgba(150, 120, 200, 0.12);
+  --star: #f5b301;
 }
 
 * {
   box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 body {
@@ -33,15 +43,13 @@ h1 {
   font-weight: 800;
   letter-spacing: -0.02em;
   background: linear-gradient(transparent 55%, var(--yellow) 55%);
-}
-
-[hidden] {
-  display: none !important;
+  color: #2d2a45;
 }
 
 /* 입력 칸 + 추가 버튼 */
 #add-box {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 8px;
   background: var(--card);
@@ -50,14 +58,29 @@ h1 {
   box-shadow: 0 6px 0 var(--lavender);
 }
 
-input[type="text"] {
+#add-box .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#add-box label {
+  padding-left: 6px;
+  color: var(--gray);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+input[type="text"],
+input[type="date"] {
   flex: 1;
   min-width: 0;
   min-height: 48px;
   padding: 0 14px;
   border: 2px solid transparent;
   border-radius: 14px;
-  background: #f6f1ff;
+  background: var(--field);
   color: var(--ink);
   font: inherit;
   font-size: 16px;
@@ -67,7 +90,8 @@ input[type="text"]::placeholder {
   color: var(--gray);
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus,
+input[type="date"]:focus {
   outline: none;
   border-color: var(--lavender);
   background: var(--card);
@@ -86,12 +110,24 @@ button {
 #add-button {
   padding: 0 20px;
   background: var(--pink);
-  color: var(--ink);
+  color: #2d2a45;
 }
 
 #add-button:hover,
 #add-button:active {
   background: var(--pink-dark);
+}
+
+#important-toggle {
+  flex: none;
+  padding: 0 14px;
+  background: var(--field);
+  color: var(--gray);
+}
+
+#important-toggle[aria-pressed="true"] {
+  background: var(--yellow);
+  color: #2d2a45;
 }
 
 /* 보기 고르기 */
@@ -113,6 +149,7 @@ button {
 
 #filters button[aria-pressed="true"] {
   background: var(--lavender);
+  color: #2d2a45;
 }
 
 /* 할 일 목록 */
@@ -125,13 +162,13 @@ ul {
 li {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 12px;
-  padding: 6px 8px 6px 16px;
+  padding: 6px 6px 6px 14px;
   background: var(--card);
   border-left: 8px solid var(--mint);
   border-radius: 16px;
-  box-shadow: 0 3px 12px rgba(150, 120, 200, 0.12);
+  box-shadow: 0 3px 12px var(--shadow);
 }
 
 li:nth-child(3n + 2) {
@@ -142,6 +179,16 @@ li:nth-child(3n) {
   border-left-color: var(--lavender);
 }
 
+li.important,
+li.important:nth-child(n) {
+  border-left-color: var(--pink);
+}
+
+li.done,
+li.done:nth-child(n) {
+  border-left-color: var(--done-line);
+}
+
 li input[type="checkbox"] {
   flex: none;
   width: 22px;
@@ -149,32 +196,102 @@ li input[type="checkbox"] {
   accent-color: #a78bfa;
 }
 
-li.done {
-  border-left-color: #e3dff0;
-}
-
-li.done span {
-  color: var(--gray);
-  text-decoration: line-through;
-}
-
-li span {
+li .main {
   flex: 1;
   min-width: 0;
+  padding: 4px 0;
+}
+
+li .text {
+  display: block;
   overflow-wrap: anywhere;
   font-size: 16px;
 }
 
+li.done .text {
+  color: var(--gray);
+  text-decoration: line-through;
+}
+
+li .due {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--gray);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+li .due.today {
+  background: var(--yellow);
+  color: #2d2a45;
+}
+
+li .due.soon {
+  background: var(--mint);
+  color: #2d2a45;
+}
+
+li .due.late {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
 li button {
   flex: none;
-  min-width: 56px;
-  background: #ffe3ef;
-  color: var(--rose);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  background: transparent;
+  color: var(--gray);
+  font-size: 13px;
 }
 
 li button:hover,
 li button:active {
-  background: #ffcfe2;
+  background: var(--field);
+}
+
+li button.star {
+  font-size: 22px;
+  color: var(--gray);
+}
+
+li button.star[aria-pressed="true"] {
+  color: var(--star);
+}
+
+li button.delete {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+li button.delete:hover,
+li button.delete:active {
+  background: var(--rose-soft-hover);
+}
+
+/* 고치는 중인 줄 */
+li.editing {
+  align-items: stretch;
+  flex-direction: column;
+  padding: 10px;
+}
+
+li.editing .edit-row {
+  display: flex;
+  gap: 8px;
+}
+
+li.editing button.save {
+  background: var(--pink);
+  color: #2d2a45;
+}
+
+li.editing button.cancel {
+  background: var(--field);
 }
 
 /* 비어 있을 때 */
