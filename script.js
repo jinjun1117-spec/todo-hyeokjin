@@ -704,15 +704,27 @@ function renderCalendarTab() {
     if ((firstWeekday + day - 1) % 7 === 0) cell.classList.add('sun');
     if (due === today) cell.classList.add('today');
     if (due === selectedDate) cell.classList.add('selected');
+    const finished = items.filter(function (t) { return t.done; }).length;
     cell.setAttribute('aria-label', dateText(due) + (items.length
-      ? ', 중요 ' + importantCount + '건, 할 일 ' + normalCount + '건' : ''));
+      ? ', 중요 ' + importantCount + '건, 할 일 ' + normalCount + '건, 완료 ' + finished + '/' + items.length : ''));
     cell.setAttribute('aria-pressed', String(due === selectedDate));
     cell.dataset.date = due;
 
+    // 날짜 숫자 옆의 동그라미: 그 날짜 할 일의 완료 정도만큼 채워진다
     const number = document.createElement('span');
     number.className = 'number';
     number.textContent = day;
-    cell.append(number);
+    const numberRow = document.createElement('span');
+    numberRow.className = 'number-row';
+    numberRow.append(number);
+    if (items.length > 0) {
+      const ring = document.createElement('span');
+      ring.className = 'ring';
+      ring.style.setProperty('--p', String(Math.round(finished / items.length * 100)));
+      ring.dataset.percent = String(Math.round(finished / items.length * 100));
+      numberRow.append(ring);
+    }
+    cell.append(numberRow);
     // 칸 안에는 "중요 N건"과 "할 일 N건" 두 칸만 보인다(0건인 칸은 뺀다)
     if (importantCount > 0) {
       const chip = document.createElement('span');

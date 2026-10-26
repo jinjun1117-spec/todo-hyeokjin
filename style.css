@@ -612,9 +612,21 @@ dialog textarea {
   color: #2d2a45;
 }
 
-#cal-grid .cal-day .number {
-  align-self: center;
+#cal-grid .number-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   line-height: 18px;
+}
+
+#cal-grid .ring {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  background: conic-gradient(var(--pink) calc(var(--p) * 1%), transparent 0);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--pink);
 }
 
 #cal-grid .chip {
