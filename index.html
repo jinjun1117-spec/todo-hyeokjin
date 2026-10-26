@@ -17,52 +17,41 @@
 
   <main>
     <section id="tab-todo" role="tabpanel" aria-label="할 일">
+      <div id="day-bar">
+        <button type="button" id="day-prev" aria-label="전날">‹</button>
+        <div id="day-label">
+          <strong id="day-text"></strong>
+          <span id="day-dday" class="due"></span>
+        </div>
+        <button type="button" id="day-next" aria-label="다음날">›</button>
+        <button type="button" id="day-today">오늘</button>
+      </div>
+
       <div id="progress" hidden>
         <p id="progress-text">0 / 0 완료</p>
         <div id="progress-track"><div id="progress-fill"></div></div>
       </div>
 
       <div id="add-box">
-        <div class="row">
-          <input type="text" id="todo-input" placeholder="할 일을 적어 보세요" maxlength="100" autocomplete="off">
-          <button type="button" id="add-button">추가</button>
-        </div>
-        <div class="row">
-          <label for="due-input">마감일</label>
-          <input type="date" id="due-input">
-          <button type="button" id="important-toggle" aria-pressed="false">☆ 중요</button>
-        </div>
-      </div>
-
-      <div id="tools">
-        <input type="search" id="search-input" placeholder="할 일 찾기" aria-label="할 일 찾기" autocomplete="off">
-        <select id="sort-select" aria-label="정렬">
-          <option value="due">마감일 순서</option>
-          <option value="added">추가한 순서</option>
-          <option value="important">중요한 순서</option>
-        </select>
+        <input type="text" id="todo-input" placeholder="할 일을 적어 보세요" maxlength="100" autocomplete="off">
+        <button type="button" id="add-button">추가</button>
       </div>
 
       <div id="filters">
         <button type="button" data-filter="all" aria-pressed="true">전체</button>
+        <button type="button" data-filter="important" aria-pressed="false">중요</button>
         <button type="button" data-filter="active" aria-pressed="false">진행 중</button>
         <button type="button" data-filter="done" aria-pressed="false">완료</button>
       </div>
 
       <ul id="todo-list"></ul>
 
-      <p id="empty-message" class="empty">아직 할 일이 없어요</p>
+      <p id="empty-message" class="empty">이 날 할 일이 없어요</p>
 
       <div id="footer" hidden>
         <span id="count">남은 할 일 0개</span>
         <button type="button" id="clear-done">완료한 것 지우기</button>
       </div>
-    </section>
-
-    <section id="tab-important" role="tabpanel" aria-label="중요" hidden>
-      <h2>⭐ 중요한 할 일</h2>
-      <ul id="important-list"></ul>
-      <p id="important-empty" class="empty">중요 표시한 할 일이 없어요</p>
     </section>
 
     <section id="tab-calendar" role="tabpanel" aria-label="캘린더" hidden>
@@ -76,23 +65,23 @@
       <div id="cal-day">
         <h3 id="cal-day-title"></h3>
         <ul id="calendar-list"></ul>
-        <p id="calendar-empty" class="empty">이 날 마감인 할 일이 없어요</p>
-        <button type="button" id="cal-add">이 날짜로 할 일 추가</button>
+        <p id="calendar-empty" class="empty">이 날 할 일이 없어요</p>
+        <button type="button" id="cal-open">이 날짜 할 일 보기</button>
       </div>
     </section>
 
-    <section id="tab-dday" role="tabpanel" aria-label="디데이" hidden>
-      <h2>⏳ 디데이</h2>
-      <div id="dday-list"></div>
-      <p id="dday-empty" class="empty">마감일이 있는 할 일이 없어요</p>
+    <section id="tab-days" role="tabpanel" aria-label="날짜별 목록" hidden>
+      <h2>📋 날짜별 목록</h2>
+      <input type="search" id="search-input" placeholder="할 일 찾기" aria-label="할 일 찾기" autocomplete="off">
+      <div id="days-list"></div>
+      <p id="days-empty" class="empty">아직 할 일이 없어요</p>
     </section>
   </main>
 
   <nav id="tabbar" role="tablist" aria-label="화면 고르기">
     <button type="button" role="tab" data-tab="todo" aria-selected="true"><span aria-hidden="true">✅</span>할 일</button>
-    <button type="button" role="tab" data-tab="important" aria-selected="false"><span aria-hidden="true">⭐</span>중요</button>
     <button type="button" role="tab" data-tab="calendar" aria-selected="false"><span aria-hidden="true">📅</span>캘린더</button>
-    <button type="button" role="tab" data-tab="dday" aria-selected="false"><span aria-hidden="true">⏳</span>디데이</button>
+    <button type="button" role="tab" data-tab="days" aria-selected="false"><span aria-hidden="true">📋</span>날짜별 목록</button>
   </nav>
 
   <dialog id="detail" aria-labelledby="detail-heading">
@@ -101,11 +90,6 @@
     <input type="text" id="detail-title" maxlength="100" autocomplete="off">
     <label for="detail-memo">메모</label>
     <textarea id="detail-memo" rows="5" maxlength="1000" placeholder="자세한 내용을 적어 두세요"></textarea>
-    <label for="detail-due">마감일</label>
-    <div class="detail-row">
-      <input type="date" id="detail-due">
-      <button type="button" id="detail-clear-due">마감일 지우기</button>
-    </div>
     <div class="detail-row">
       <button type="button" id="detail-important" aria-pressed="false">☆ 중요</button>
       <button type="button" id="detail-done" aria-pressed="false">☐ 완료</button>

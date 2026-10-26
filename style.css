@@ -128,7 +128,6 @@ h2 {
 /* 입력 칸 + 추가 버튼 */
 #add-box {
   display: flex;
-  flex-direction: column;
   gap: 8px;
   padding: 8px;
   background: var(--card);
@@ -137,22 +136,7 @@ h2 {
   box-shadow: 0 6px 0 var(--lavender);
 }
 
-#add-box .row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#add-box label {
-  padding-left: 6px;
-  color: var(--gray);
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 input[type="text"],
-input[type="date"],
 textarea {
   flex: 1;
   min-width: 0;
@@ -172,7 +156,6 @@ textarea::placeholder {
 }
 
 input[type="text"]:focus,
-input[type="date"]:focus,
 textarea:focus {
   outline: none;
   border-color: var(--lavender);
@@ -200,28 +183,10 @@ button {
   background: var(--pink-dark);
 }
 
-#important-toggle {
-  flex: none;
-  padding: 0 14px;
-  background: var(--field);
-  color: var(--gray);
-}
-
-#important-toggle[aria-pressed="true"] {
-  background: var(--yellow);
-  color: #2d2a45;
-}
-
-/* 찾기와 정렬 */
-#tools {
-  display: flex;
-  gap: 8px;
-  margin-top: 22px;
-}
-
-input[type="search"],
-select {
+/* 찾기 (날짜별 목록 탭) */
+input[type="search"] {
   min-width: 0;
+  width: 100%;
   min-height: 44px;
   padding: 0 14px;
   border: 2px solid transparent;
@@ -233,31 +198,21 @@ select {
   box-shadow: 0 3px 12px var(--shadow);
 }
 
-input[type="search"] {
-  flex: 1;
-}
-
 input[type="search"]::placeholder {
   color: var(--gray);
 }
 
-input[type="search"]:focus,
-select:focus {
+input[type="search"]:focus {
   outline: none;
   border-color: var(--lavender);
-}
-
-select {
-  flex: none;
-  max-width: 45%;
-  font-size: 15px;
 }
 
 /* 보기 고르기 */
 #filters {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 22px;
 }
 
 #filters button {
@@ -354,24 +309,6 @@ li .memo {
   white-space: nowrap;
 }
 
-.due {
-  display: inline-block;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--date-color, var(--field));
-  color: #2d2a45;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.due.late {
-  box-shadow: inset 0 0 0 2px var(--rose);
-}
-
-li.done .due {
-  opacity: 0.55;
-}
-
 li button.star {
   font-size: 22px;
   color: var(--gray);
@@ -423,55 +360,6 @@ li button.delete:active {
   color: var(--gray);
   opacity: 0.5;
   cursor: default;
-}
-
-/* 디데이 카드 */
-#dday-list {
-  display: grid;
-  gap: 12px;
-}
-
-.dday-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  min-height: 84px;
-  padding: 14px 18px;
-  background: var(--date-color, var(--field));
-  border-radius: 20px;
-  box-shadow: 0 3px 12px var(--shadow);
-  color: #2d2a45;
-  font-weight: 400;
-  text-align: left;
-}
-
-.dday-card .big {
-  flex: none;
-  min-width: 92px;
-  font-size: 30px;
-  font-weight: 800;
-}
-
-.dday-card.late .big {
-  color: #c2255c;
-}
-
-.dday-card .info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.dday-card .title {
-  overflow-wrap: anywhere;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.dday-card .date {
-  font-size: 13px;
-  opacity: 0.75;
 }
 
 /* 맨 아래 탭 줄 */
@@ -541,7 +429,6 @@ dialog label {
 }
 
 dialog input[type="text"],
-dialog input[type="date"],
 dialog textarea {
   width: 100%;
 }
@@ -561,13 +448,6 @@ dialog textarea {
   flex: 1;
   background: var(--field);
   color: var(--ink);
-}
-
-.detail-row #detail-clear-due {
-  flex: none;
-  padding: 0 12px;
-  color: var(--gray);
-  font-size: 13px;
 }
 
 .detail-row button[aria-pressed="true"] {
@@ -724,9 +604,90 @@ dialog textarea {
   font-weight: 800;
 }
 
-#cal-add {
+#cal-open {
   width: 100%;
   margin-top: 12px;
   background: var(--pink);
   color: #2d2a45;
+}
+
+/* 날짜 줄 (할 일 탭) */
+#day-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+#day-bar button {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  background: var(--card);
+  box-shadow: 0 3px 12px var(--shadow);
+  color: var(--ink);
+  font-size: 20px;
+}
+
+#day-bar #day-today {
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+#day-label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+#day-text {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* 날짜 이름표 (날짜 줄·날짜별 목록 제목) */
+.due {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--date-color, var(--field));
+  color: #2d2a45;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 날짜별 목록 탭 */
+#days-list {
+  margin-top: 4px;
+}
+
+.day-group {
+  margin-top: 22px;
+}
+
+.day-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--date-color, var(--field));
+  border-radius: 14px;
+  color: #2d2a45;
+  font-size: 15px;
+  text-align: left;
+}
+
+.day-head .count {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.day-group ul {
+  margin-top: 10px;
 }
