@@ -224,7 +224,8 @@ function addTodo() {
     input.focus();
     return;
   }
-  todos.push({
+  // 새 할 일은 배열의 맨 앞에 넣는다. 그러면 자기 무리(나머지 진행 중)의 맨 위에 나타난다
+  todos.unshift({
     id: Date.now() + Math.random(),
     text: text,
     done: false,
@@ -238,10 +239,17 @@ function addTodo() {
   render();
 }
 
+// 완료를 바꾸면 새 무리의 맨 위에 나타나도록 배열의 맨 앞으로 옮긴다
+function bringToFront(todo) {
+  todos.splice(todos.indexOf(todo), 1);
+  todos.unshift(todo);
+}
+
 function toggleDone(id) {
   const todo = findTodo(id);
   if (todo) {
     todo.done = !todo.done;
+    bringToFront(todo);
     save();
     render();
   }
@@ -372,7 +380,11 @@ function applyDetail(todo) {
   todo.text = title;
   todo.memo = detailMemo.value.trim();
   todo.important = detailImportant.getAttribute('aria-pressed') === 'true';
-  todo.done = detailDone.getAttribute('aria-pressed') === 'true';
+  const done = detailDone.getAttribute('aria-pressed') === 'true';
+  if (done !== todo.done) {
+    todo.done = done;
+    bringToFront(todo);
+  }
   return true;
 }
 
