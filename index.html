@@ -97,7 +97,7 @@
     <label for="detail-title">제목</label>
     <input type="text" id="detail-title" maxlength="100" autocomplete="off">
     <label for="detail-memo">메모</label>
-    <textarea id="detail-memo" rows="5" maxlength="1000" placeholder="자세한 내용을 적어 두세요"></textarea>
+    <textarea id="detail-memo" rows="3" maxlength="1000" placeholder="자세한 내용을 적어 두세요"></textarea>
     <div class="detail-row">
       <button type="button" id="detail-important" aria-pressed="false">☆ 중요</button>
       <button type="button" id="detail-done" aria-pressed="false">☐ 완료</button>
@@ -105,8 +105,15 @@
     <p class="detail-caption">날짜 옮기기</p>
     <div class="detail-row detail-move">
       <button type="button" id="detail-tomorrow">내일로 미루기</button>
-      <button type="button" id="detail-nextweek">다음 주로 미루기</button>
-      <button type="button" id="detail-today">오늘로 옮기기</button>
+      <button type="button" id="detail-pick" aria-expanded="false">날짜로 미루기</button>
+    </div>
+    <div id="detail-picker" hidden>
+      <div class="picker-head">
+        <button type="button" id="picker-prev" aria-label="이전 달">‹</button>
+        <strong id="picker-title"></strong>
+        <button type="button" id="picker-next" aria-label="다음 달">›</button>
+      </div>
+      <div id="picker-grid"></div>
     </div>
     <div class="detail-row detail-actions">
       <button type="button" id="detail-delete">삭제</button>

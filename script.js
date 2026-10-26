@@ -51,6 +51,10 @@ const detailTitle = byId('detail-title');
 const detailMemo = byId('detail-memo');
 const detailImportant = byId('detail-important');
 const detailDone = byId('detail-done');
+const detailPicker = byId('detail-picker');
+const pickerTitle = byId('picker-title');
+const pickerGrid = byId('picker-grid');
+const detailPick = byId('detail-pick');
 
 const TAB_TITLES = {
   todo: '할 일 목록',
@@ -99,6 +103,8 @@ let range = 'upcoming';
 let undoAction = null;
 let toastTimer = null;
 let detailId = null;
+let pickerYear = 0;
+let pickerMonth = 0;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let selectedDate = todayString();
@@ -351,7 +357,7 @@ function openDetail(id) {
   detailMemo.value = todo.memo;
   setDetailImportant(todo.important);
   setDetailDone(todo.done);
-  byId('detail-today').hidden = todo.due === todayString();
+  setPicker(false);
   detail.showModal();
 }
 
@@ -381,8 +387,8 @@ function saveDetail() {
   render();
 }
 
-// 날짜 옮기기: 오늘과 그 할 일 날짜 중 더 뒤인 날을 기준으로 며칠 뒤로 보낸다(0이면 오늘로)
-function moveDetail(days, label) {
+// 날짜 옮기기: 고친 값을 저장하고, 할 일의 날짜를 바꾼 뒤 창을 닫는다. 되돌리기도 걸어 둔다
+function moveDetailTo(target, label) {
   const todo = findTodo(detailId);
   if (!todo) {
     detail.close();
@@ -390,13 +396,77 @@ function moveDetail(days, label) {
   }
   if (!applyDetail(todo)) return;
   const oldDue = todo.due;
-  const today = todayString();
-  const base = todo.due > today ? todo.due : today;
-  todo.due = days === 0 ? today : addDays(base, days);
+  todo.due = target;
   detail.close();
   save();
   render();
   showToast(label + ': ' + dateText(todo.due), function () { todo.due = oldDue; });
+}
+
+// 내일로 미루기: 오늘과 그 할 일 날짜 중 더 뒤인 날의 다음 날로 보낸다
+function postponeToTomorrow() {
+  const todo = findTodo(detailId);
+  if (!todo) return;
+  const today = todayString();
+  moveDetailTo(addDays(todo.due > today ? todo.due : today, 1), '미뤘어요');
+}
+
+/* 날짜로 미루기: 창 안에 펼쳐지는 작은 달력 */
+function setPicker(open) {
+  detailPicker.hidden = !open;
+  detailPick.setAttribute('aria-expanded', String(open));
+  if (open) {
+    const todo = findTodo(detailId);
+    const p = parseDue(todo ? todo.due : todayString());
+    pickerYear = p.year;
+    pickerMonth = p.month - 1;
+    renderPicker();
+  }
+}
+
+function renderPicker() {
+  const todo = findTodo(detailId);
+  const current = todo ? todo.due : '';
+  pickerTitle.textContent = pickerYear + '년 ' + (pickerMonth + 1) + '월';
+
+  const cells = [];
+  WEEKDAYS.split('').forEach(function (name, i) {
+    const label = document.createElement('span');
+    label.className = 'weekday' + (i === 0 ? ' sun' : '');
+    label.textContent = name;
+    cells.push(label);
+  });
+  const firstWeekday = new Date(pickerYear, pickerMonth, 1).getDay();
+  const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+  for (let i = 0; i < firstWeekday; i++) cells.push(document.createElement('span'));
+  const today = todayString();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const due = dueString(pickerYear, pickerMonth, day);
+    const cell = makeButton(String(day), 'pick-day', function () { pickDate(due); });
+    if ((firstWeekday + day - 1) % 7 === 0) cell.classList.add('sun');
+    if (due === today) cell.classList.add('today');
+    if (due === current) cell.classList.add('current');
+    cell.dataset.date = due;
+    cell.setAttribute('aria-label', dateText(due) + '로 옮기기');
+    cells.push(cell);
+  }
+  pickerGrid.replaceChildren(...cells);
+}
+
+function pickDate(due) {
+  const todo = findTodo(detailId);
+  if (todo && todo.due === due) {
+    setPicker(false);
+    return;
+  }
+  moveDetailTo(due, '옮겼어요');
+}
+
+function movePicker(step) {
+  const moved = new Date(pickerYear, pickerMonth + step, 1);
+  pickerYear = moved.getFullYear();
+  pickerMonth = moved.getMonth();
+  renderPicker();
 }
 
 function deleteFromDetail() {
@@ -849,9 +919,10 @@ detailImportant.addEventListener('click', function () {
 detailDone.addEventListener('click', function () {
   setDetailDone(detailDone.getAttribute('aria-pressed') !== 'true');
 });
-byId('detail-tomorrow').addEventListener('click', function () { moveDetail(1, '미뤘어요'); });
-byId('detail-nextweek').addEventListener('click', function () { moveDetail(7, '미뤘어요'); });
-byId('detail-today').addEventListener('click', function () { moveDetail(0, '옮겼어요'); });
+byId('detail-tomorrow').addEventListener('click', postponeToTomorrow);
+detailPick.addEventListener('click', function () { setPicker(detailPicker.hidden); });
+byId('picker-prev').addEventListener('click', function () { movePicker(-1); });
+byId('picker-next').addEventListener('click', function () { movePicker(1); });
 byId('detail-save').addEventListener('click', saveDetail);
 byId('detail-cancel').addEventListener('click', function () { detail.close(); });
 byId('detail-delete').addEventListener('click', deleteFromDetail);

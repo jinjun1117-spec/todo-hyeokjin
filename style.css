@@ -761,6 +761,66 @@ dialog textarea {
 }
 
 .detail-move button {
-  flex: 1 1 40%;
   font-size: 14px;
+}
+
+/* 날짜 고르는 작은 달력 */
+#detail-picker {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--field);
+  border-radius: 16px;
+}
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.picker-head button {
+  min-width: 40px;
+  min-height: 40px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 18px;
+}
+
+#picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+#picker-grid .weekday {
+  padding: 4px 0;
+  color: var(--gray);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+#picker-grid .weekday.sun,
+#picker-grid .pick-day.sun {
+  color: var(--rose);
+}
+
+#picker-grid .pick-day {
+  min-height: 38px;
+  padding: 0;
+  background: transparent;
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#picker-grid .pick-day.today {
+  box-shadow: inset 0 0 0 2px var(--pink);
+}
+
+#picker-grid .pick-day.current {
+  background: var(--lavender);
+  color: #2d2a45;
 }
