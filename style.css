@@ -715,3 +715,13 @@ dialog textarea {
 .day-group ul {
   margin-top: 10px;
 }
+
+/* 테스트 할 일 버튼 */
+#sample-button {
+  width: 100%;
+  margin-top: 28px;
+  background: transparent;
+  border: 2px dashed var(--lavender);
+  color: var(--gray);
+  font-size: 14px;
+}

@@ -30,6 +30,7 @@ const calendarList = byId('calendar-list');
 const calendarEmpty = byId('calendar-empty');
 const searchInput = byId('search-input');
 const rangeButtons = document.querySelectorAll('#range button');
+const sampleButton = byId('sample-button');
 const daysList = byId('days-list');
 const daysEmpty = byId('days-empty');
 const todayText = byId('today');
@@ -55,6 +56,30 @@ const TAB_TITLES = {
   days: '날짜별 목록',
 };
 const CALENDAR_CHIPS = 3;
+
+// 테스트 할 일: [오늘에서 며칠 뒤인지, 제목, 중요, 완료, 메모]. 5개짜리 날이 두 번(오늘, +2일) 있다
+const SAMPLE_TODOS = [
+  [0, '우유·계란 사기', false, false, ''],
+  [0, '영어 단어 30개 외우기', false, false, ''],
+  [0, '운동 30분', false, true, ''],
+  [0, '보고서 초안 쓰기', true, false, '목차부터 정리하기\n3쪽 안으로'],
+  [0, '엄마한테 전화하기', false, false, ''],
+  [2, '치과 예약 확인', false, false, ''],
+  [2, '도서관 책 반납', false, false, ''],
+  [2, '팀 회의 자료 준비', true, false, '3시 회의실 B'],
+  [2, '세탁소 다녀오기', false, false, ''],
+  [2, '친구 생일 선물 사기', false, false, '예산 3만 원'],
+  [-3, '월세 이체하기', true, true, ''],
+  [-1, '분리수거 하기', false, true, ''],
+  [-1, '이메일 답장하기', false, true, ''],
+  [1, '병원 진료 가기', false, false, ''],
+  [3, '장보기 목록 쓰기', false, false, ''],
+  [3, '책 20쪽 읽기', false, false, ''],
+  [4, '자전거 수리 맡기기', false, false, ''],
+  [6, '여행 짐 싸기', false, false, ''],
+  [8, '보험료 납부', true, false, ''],
+  [10, '프로젝트 마감 확인', false, false, ''],
+];
 
 const EMPTY_TEXT = {
   all: '이 날 할 일이 없어요',
@@ -142,6 +167,7 @@ function load() {
           // 날짜가 없던 예전 할 일은 오늘 날짜로 넣는다
           due: hasDate ? t.due : todayString(),
           memo: typeof t.memo === 'string' ? t.memo : '',
+          sample: !!t.sample,
         };
       });
     if (moved) {
@@ -205,6 +231,37 @@ function toggleImportant(id) {
     todo.important = !todo.important;
     save();
     render();
+  }
+}
+
+/* 테스트 할 일: 넣은 것에는 sample 표시를 해 두어서, 내가 만든 할 일과 섞이지 않게 지울 수 있다 */
+function hasSamples() {
+  return todos.some(function (t) { return t.sample; });
+}
+
+function addSamples() {
+  const today = todayString();
+  SAMPLE_TODOS.forEach(function (row, i) {
+    todos.push({
+      id: Date.now() + i + Math.random(),
+      text: row[1],
+      done: row[3],
+      important: row[2],
+      due: addDays(today, row[0]),
+      memo: row[4],
+      sample: true,
+    });
+  });
+  save();
+  render();
+}
+
+function toggleSamples() {
+  if (hasSamples()) {
+    const count = todos.filter(function (t) { return t.sample; }).length;
+    removeTodos(function (t) { return t.sample; }, '테스트 할 일 ' + count + '개 지웠어요');
+  } else {
+    addSamples();
   }
 }
 
@@ -495,6 +552,7 @@ function renderDaysTab() {
   rangeButtons.forEach(function (b) {
     b.setAttribute('aria-pressed', String(b.dataset.range === range));
   });
+  sampleButton.textContent = hasSamples() ? '🧪 테스트 할 일 지우기' : '🧪 테스트 할 일 20개 넣기';
 }
 
 function render() {
@@ -595,6 +653,7 @@ filterButtons.forEach(function (b) {
     render();
   });
 });
+sampleButton.addEventListener('click', toggleSamples);
 rangeButtons.forEach(function (b) {
   b.addEventListener('click', function () {
     range = b.dataset.range;
