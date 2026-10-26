@@ -65,6 +65,10 @@
         <button type="button" id="cal-today">오늘</button>
       </div>
       <div id="cal-grid"></div>
+      <div id="cal-stats">
+        <h3 id="cal-stats-title">완료율</h3>
+        <div id="cal-stats-list"></div>
+      </div>
     </section>
 
     <section id="tab-options" role="tabpanel" aria-label="옵션" hidden>
@@ -113,8 +117,7 @@
         <button type="button" data-span="month" aria-pressed="false">한달 보기</button>
       </div>
       <div id="days-filter" role="group" aria-label="보여 줄 날짜">
-        <button type="button" data-days="all" aria-pressed="true">전체 날짜</button>
-        <button type="button" data-days="has" aria-pressed="false">할 일 있는 날짜만</button>
+        <button type="button" id="days-has" aria-pressed="false">할 일 보기</button>
       </div>
       <div id="span-nav">
         <button type="button" id="span-prev" aria-label="이전">‹</button>

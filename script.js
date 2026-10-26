@@ -220,7 +220,6 @@ const popupOpen = byId('popup-open');
 const searchInput = byId('search-input');
 const spanButtons = document.querySelectorAll('#span-tabs button');
 const spanLabel = byId('span-label');
-const daysFilterButtons = document.querySelectorAll('#days-filter button');
 const sampleButton = byId('sample-button');
 const daysList = byId('days-list');
 const daysEmpty = byId('days-empty');
@@ -1283,6 +1282,51 @@ function renderCalendarTab() {
     cells.push(cell);
   }
   calGrid.replaceChildren(...cells);
+  renderCalendarStats(firstWeekday, daysInMonth);
+}
+
+// 달력 아래 완료율: 그 달 전체와, 달력에 보이는 주마다(첫째 주, 둘째 주…) 끝낸 비율
+const WEEK_NAMES = ['첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째'];
+
+function renderCalendarStats(firstWeekday, daysInMonth) {
+  const weeks = Math.ceil((firstWeekday + daysInMonth) / 7);
+  const rows = [{ label: (calMonth + 1) + '월 전체', from: 1, to: daysInMonth, total: true }];
+  for (let w = 0; w < weeks; w++) {
+    rows.push({
+      label: WEEK_NAMES[w] + ' 주',
+      from: Math.max(1, w * 7 - firstWeekday + 1),
+      to: Math.min(daysInMonth, (w + 1) * 7 - firstWeekday),
+    });
+  }
+  byId('cal-stats-title').textContent = calYear + '년 ' + (calMonth + 1) + '월 완료율';
+  byId('cal-stats-list').replaceChildren(...rows.map(function (row) {
+    const first = dueString(calYear, calMonth, row.from);
+    const last = dueString(calYear, calMonth, row.to);
+    const inRange = todos.filter(function (t) { return t.due >= first && t.due <= last; });
+    const finished = inRange.filter(function (t) { return t.done; }).length;
+    const percent = inRange.length ? Math.round(finished / inRange.length * 100) : 0;
+
+    const line = document.createElement('div');
+    line.className = 'stat-row' + (row.total ? ' total' : '');
+    line.dataset.percent = String(percent);
+    const name = document.createElement('span');
+    name.className = 'stat-label';
+    name.textContent = row.label;
+    const range = document.createElement('small');
+    range.className = 'stat-range';
+    range.textContent = row.total ? '' : (calMonth + 1) + '/' + row.from + '~' + (calMonth + 1) + '/' + row.to;
+    name.append(range);
+    const bar = document.createElement('span');
+    bar.className = 'stat-bar';
+    const fill = document.createElement('i');
+    fill.style.width = percent + '%';
+    bar.append(fill);
+    const text = document.createElement('span');
+    text.className = 'stat-text';
+    text.textContent = inRange.length ? percent + '% (' + finished + '/' + inRange.length + ')' : '할 일 없음';
+    line.append(name, bar, text);
+    return line;
+  }));
 }
 
 // 날짜 창: 그날 할 일을 중요한 것부터 몇 개만 보여 준다
@@ -1406,9 +1450,7 @@ function renderDaysTab() {
 
   daysEmpty.textContent = word ? '검색 결과가 없어요' : '할 일이 있는 날짜가 없어요';
   daysEmpty.hidden = shownCount > 0;
-  daysFilterButtons.forEach(function (b) {
-    b.setAttribute('aria-pressed', String(b.dataset.days === daysFilter));
-  });
+  byId('days-has').setAttribute('aria-pressed', String(daysFilter === 'has'));
   sampleButton.textContent = hasSamples() ? '🧪 테스트 할 일 지우기' : '🧪 테스트 할 일 20개 넣기';
 }
 
@@ -1699,11 +1741,10 @@ spanButtons.forEach(function (b) {
     render();
   });
 });
-daysFilterButtons.forEach(function (b) {
-  b.addEventListener('click', function () {
-    daysFilter = b.dataset.days;
-    render();
-  });
+// "할 일 보기": 누르면 할 일 없는 날짜가 숨고, 다시 누르면 모든 날짜가 보인다
+byId('days-has').addEventListener('click', function () {
+  daysFilter = daysFilter === 'has' ? 'all' : 'has';
+  render();
 });
 byId('span-prev').addEventListener('click', function () { moveSpan(-1); });
 byId('span-next').addEventListener('click', function () { moveSpan(1); });

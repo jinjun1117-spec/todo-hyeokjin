@@ -1296,3 +1296,71 @@ li,
   flex: 1;
   min-width: 0;
 }
+
+/* 달력 아래 완료율 */
+#cal-stats {
+  margin-top: 22px;
+  padding: 14px;
+  background: var(--card);
+  border: var(--bw) solid var(--lavender);
+  border-radius: calc(18px * var(--rs));
+  box-shadow: var(--elev);
+}
+
+#cal-stats h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 82px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 14px;
+}
+
+.stat-row + .stat-row {
+  border-top: 1px dashed var(--done-line);
+}
+
+.stat-row.total {
+  padding-bottom: 10px;
+  font-weight: 800;
+}
+
+.stat-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.stat-range {
+  color: var(--gray);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.stat-bar {
+  height: 10px;
+  overflow: hidden;
+  background: var(--field);
+  border-radius: min(999px, calc(999px * var(--rs)));
+}
+
+.stat-bar i {
+  display: block;
+  height: 100%;
+  background: var(--pink);
+  border-radius: inherit;
+}
+
+.stat-text {
+  min-width: 82px;
+  color: var(--gray);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
