@@ -1224,3 +1224,16 @@ li,
   font-size: 13px;
   font-weight: 700;
 }
+
+/* 확인 창 */
+#confirm-text {
+  margin: 4px 4px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+#confirm-ok {
+  background: var(--rose-soft);
+  color: var(--rose);
+}

@@ -631,6 +631,18 @@ function renormalize() {
   });
 }
 
+// 안내에 쓰는 할 일 이름: 길면 줄이고 ‘ ’로 감싼다
+function quote(text) {
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  return '‘' + (clean.length > 12 ? clean.slice(0, 12) + '…' : clean) + '’';
+}
+
+// 여러 개면 "‘A’, ‘B’ 외 3개"처럼 앞의 두 개만 보여 준다
+function nameList(list) {
+  const shown = list.slice(0, 2).map(function (t) { return quote(t.text); }).join(', ');
+  return list.length > 2 ? shown + ' 외 ' + (list.length - 2) + '개' : shown;
+}
+
 function notify(message) {
   showToast(message, null, NOTICE_MILLISECONDS);
 }
@@ -724,14 +736,14 @@ function addSamples() {
 function toggleSamples() {
   if (hasSamples()) {
     const count = todos.filter(function (t) { return t.sample; }).length;
-    removeTodos(function (t) { return t.sample; }, '테스트 할 일 ' + count + '개 지웠어요');
+    removeTodos(function (t) { return t.sample; }, function () { return '테스트 할 일 ' + count + '개를 지웠어요'; });
   } else {
     addSamples();
   }
 }
 
 /* 지운 할 일은 원래 자리(순서)와 함께 기억해 둔다 */
-function removeTodos(shouldRemove, message) {
+function removeTodos(shouldRemove, makePrefix) {
   const removed = [];
   todos.forEach(function (t, index) {
     if (shouldRemove(t)) removed.push({ todo: t, index: index });
@@ -739,33 +751,54 @@ function removeTodos(shouldRemove, message) {
   todos = todos.filter(function (t) { return !shouldRemove(t); });
   save();
   render();
-  persistDelete(removed.map(function (r) { return r.todo; }));
-  showToast(message, function () {
+  const gone = removed.map(function (r) { return r.todo; });
+  persistDelete(gone);
+  showToast(makePrefix(gone) + ': ' + nameList(gone), function () {
     // 되돌리기: 원래 자리에 다시 끼우고, 표에는 새 줄로 다시 넣는다
     removed.forEach(function (r) {
       todos.splice(Math.min(r.index, todos.length), 0, r.todo);
       placeAt(r.todo);
     });
-    persistInsert(removed.map(function (r) { return r.todo; }));
+    persistInsert(gone);
+    return '되돌렸어요: ' + nameList(gone);
   });
 }
 
 function deleteTodo(id) {
-  removeTodos(function (t) { return t.id === id; }, '삭제했어요');
+  removeTodos(function (t) { return t.id === id; }, function () { return '삭제했어요'; });
 }
 
+// 완료한 것 지우기: 먼저 확인 창을 띄우고, "삭제"를 눌렀을 때만 지운다
 function clearDone() {
   const day = viewDate;
-  const doneCount = todos.filter(function (t) { return t.due === day && t.done; }).length;
-  removeTodos(function (t) { return t.due === day && t.done; }, doneCount + '개 지웠어요');
+  const finished = todos.filter(function (t) { return t.due === day && t.done; });
+  if (!finished.length) return;
+  askConfirm(
+    '완료한 할 일 ' + finished.length + '개를 모두 삭제할까요? ' + nameList(finished),
+    function () {
+      removeTodos(function (t) { return t.due === day && t.done; }, function (gone) {
+        return '완료한 할 일 ' + gone.length + '개를 지웠어요';
+      });
+    }
+  );
+}
+
+let confirmAction = null;
+
+function askConfirm(message, onOk) {
+  byId('confirm-text').textContent = message;
+  confirmAction = onOk;
+  byId('confirm-dialog').showModal();
 }
 
 function undo() {
   const action = undoAction;
   hideToast();
-  if (action) action();
+  const message = action ? action() : null;
   save();
   render();
+  // 무엇을 되돌렸는지 알려 준다
+  if (message) notify(message);
 }
 
 function showToast(message, undoWith, milliseconds) {
@@ -855,9 +888,10 @@ function moveDetailTo(target, label) {
   save();
   render();
   persistUpdate(todo, ['text', 'memo', 'important', 'done', 'order', 'due']);
-  showToast(label + ': ' + dateText(todo.due), function () {
+  showToast(label + ': ' + quote(todo.text) + ' → ' + dateText(todo.due), function () {
     todo.due = oldDue;
     persistUpdate(todo, ['due']);
+    return '되돌렸어요: ' + quote(todo.text) + ' → ' + dateText(oldDue);
   });
 }
 
@@ -1113,6 +1147,7 @@ function renderTodoTab() {
 
   count.textContent = '남은 할 일 ' + remaining + '개';
   clearButton.disabled = finished === 0;
+  clearButton.hidden = filter !== 'all' && filter !== 'done';
   footer.hidden = dayItems.length === 0;
 
   filterButtons.forEach(function (b) {
@@ -1538,7 +1573,10 @@ function chooseTheme() {
   setSkin(theme.id);
   optionsPage = 'main';
   render();
-  showToast('테마를 바꿨어요: ' + theme.name, function () { setSkin(before); });
+  showToast('테마를 바꿨어요: ' + theme.name, function () {
+    setSkin(before);
+    return '되돌렸어요: 테마 → ' + findTheme(before).name;
+  });
 }
 
 /* 버튼과 칸에 동작 달기 */
@@ -1619,6 +1657,17 @@ tabButtons.forEach(function (b) {
 byId('cal-prev').addEventListener('click', function () { moveMonth(-1); });
 byId('cal-next').addEventListener('click', function () { moveMonth(1); });
 byId('cal-today').addEventListener('click', goToday);
+byId('confirm-cancel').addEventListener('click', function () { byId('confirm-dialog').close(); });
+byId('confirm-ok').addEventListener('click', function () {
+  const action = confirmAction;
+  confirmAction = null;
+  byId('confirm-dialog').close();
+  if (action) action();
+});
+byId('confirm-dialog').addEventListener('click', function (e) {
+  if (e.target === byId('confirm-dialog')) byId('confirm-dialog').close();
+});
+byId('confirm-dialog').addEventListener('close', function () { confirmAction = null; });
 byId('popup-close').addEventListener('click', function () { popup.close(); });
 popupOpen.addEventListener('click', function () {
   const due = popupDate;

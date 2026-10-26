@@ -135,6 +135,14 @@
     <button type="button" role="tab" data-tab="days" aria-selected="false"><span aria-hidden="true">📋</span>날짜별 목록</button>
   </nav>
 
+  <dialog id="confirm-dialog" aria-labelledby="confirm-text">
+    <p id="confirm-text"></p>
+    <div class="detail-row">
+      <button type="button" id="confirm-cancel">취소</button>
+      <button type="button" id="confirm-ok">삭제</button>
+    </div>
+  </dialog>
+
   <dialog id="day-popup" aria-labelledby="popup-title">
     <h2 id="popup-title"></h2>
     <ul id="popup-list"></ul>
