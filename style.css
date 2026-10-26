@@ -697,15 +697,32 @@ dialog textarea {
 .day-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
   min-height: 44px;
-  padding: 0 14px;
   background: var(--date-color, var(--field));
   border-radius: 14px;
   color: #2d2a45;
+}
+
+.day-head button {
+  min-height: 44px;
+  background: transparent;
+  color: #2d2a45;
   font-size: 15px;
+}
+
+.day-head .day-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 8px 0 14px;
   text-align: left;
+}
+
+.day-head .arrow {
+  width: 14px;
+  font-size: 13px;
 }
 
 .day-head .count {
@@ -713,6 +730,12 @@ dialog textarea {
   font-size: 13px;
   font-weight: 700;
   opacity: 0.75;
+}
+
+.day-head .day-go {
+  flex: none;
+  padding: 0 14px 0 8px;
+  font-size: 13px;
 }
 
 .day-group ul {

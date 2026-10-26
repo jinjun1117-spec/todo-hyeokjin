@@ -109,6 +109,7 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let selectedDate = todayString();
 let popupDate = null;
+const collapsedDates = new Set();
 
 /* 날짜: 날짜 글자('2026-10-29')를 보기 좋은 글과 색으로 바꾼다 */
 function todayString() {
@@ -752,20 +753,38 @@ function renderDaysTab() {
     const group = document.createElement('div');
     group.className = 'day-group';
 
-    const head = makeButton('', 'day-head', function () { openDay(due); });
+    // 제목 줄: 왼쪽 부분을 누르면 접고 펴고, 오른쪽 "보기 ›"를 누르면 그 날짜의 할 일 탭으로 간다
+    const folded = collapsedDates.has(due);
+    const head = document.createElement('div');
+    head.className = 'day-head';
     head.style.setProperty('--date-color', dateColor(due));
-    head.setAttribute('aria-label', dateText(due) + ' 할 일 보기');
+
+    const toggle = makeButton('', 'day-toggle', function () {
+      if (collapsedDates.has(due)) collapsedDates.delete(due);
+      else collapsedDates.add(due);
+      render();
+    });
+    toggle.setAttribute('aria-expanded', String(!folded));
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow';
+    arrow.textContent = folded ? '▸' : '▾';
     const title = document.createElement('span');
     title.textContent = dateText(due) + ' · ' + ddayText(due);
     const total = document.createElement('span');
     total.className = 'count';
     total.textContent = items.length + '개';
-    head.append(title, total);
+    toggle.append(arrow, title, total);
 
-    const itemList = document.createElement('ul');
-    itemList.append(...items.map(function (t) { return makeItem(t); }));
+    const go = makeButton('보기 ›', 'day-go', function () { openDay(due); });
+    go.setAttribute('aria-label', dateText(due) + ' 할 일 보기');
+    head.append(toggle, go);
 
-    group.append(head, itemList);
+    group.append(head);
+    if (!folded) {
+      const itemList = document.createElement('ul');
+      itemList.append(...items.map(function (t) { return makeItem(t); }));
+      group.append(itemList);
+    }
     return group;
   }));
 
