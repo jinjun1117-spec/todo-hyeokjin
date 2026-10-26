@@ -1,20 +1,35 @@
 :root {
+  /* 기본(파스텔 팝, 일반 모드). 실제 값은 script.js가 고른 테마에 맞춰 덮어쓴다 */
   --pink: #ff9ec7;
-  --pink-dark: #ff82b6;
+  --on-a1: #2d2a45;
   --lavender: #c9b8ff;
-  --mint: #b8f0d8;
+  --on-a2: #2d2a45;
   --yellow: #ffe49a;
+  --on-yellow: #2d2a45;
+  --hl: #ffe49a;
   --ink: #2d2a45;
   --gray: #9a95b3;
   --bg: #fff5fb;
   --card: #ffffff;
-  --field: #f6f1ff;
+  --card-solid: #ffffff;
   --rose: #d6336c;
-  --rose-soft: #ffe3ef;
-  --rose-soft-hover: #ffcfe2;
-  --done-line: #e3dff0;
-  --shadow: rgba(150, 120, 200, 0.12);
   --star: #f5b301;
+  --on-accent: #2d2a45;
+  --dc0: #ffb3d1;
+  --dc1: #c9b8ff;
+  --dc2: #b8f0d8;
+  --dc3: #ffe49a;
+  --dc4: #a8d8ff;
+  --dc5: #ffc9a8;
+  --dc6: #d4f0a0;
+  --dc7: #ffb3b3;
+  --rs: 1;
+  --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --elev: 0 3px 12px var(--shadow);
+  --elev-box: 0 6px 0 var(--lavender);
+  --bw: 0px;
+  --blur: none;
+  --bg-image: none;
 }
 
 :root[data-theme="dark"] {
@@ -23,13 +38,21 @@
   --gray: #a9a2c9;
   --bg: #1f1a33;
   --card: #2b2547;
-  --field: #382f5c;
+  --card-solid: #2b2547;
   --rose: #ff7aa8;
-  --rose-soft: #4a2440;
-  --rose-soft-hover: #5c2c4f;
-  --done-line: #4a4470;
-  --shadow: rgba(0, 0, 0, 0.35);
+  --hl: rgba(255, 228, 154, 0.35);
   color-scheme: dark;
+}
+
+/* 고른 색에서 만들어 내는 색들(테마를 바꿔도 자동으로 따라온다) */
+:root,
+.preview {
+  --pink-dark: color-mix(in srgb, var(--pink) 82%, #000);
+  --field: color-mix(in srgb, var(--lavender) 22%, var(--card));
+  --rose-soft: color-mix(in srgb, var(--rose) 15%, var(--card));
+  --rose-soft-hover: color-mix(in srgb, var(--rose) 28%, var(--card));
+  --done-line: color-mix(in srgb, var(--gray) 35%, var(--card));
+  --shadow: color-mix(in srgb, var(--ink) 14%, transparent);
 }
 
 * {
@@ -45,8 +68,10 @@ body {
   padding: 24px 16px 110px;
   max-width: 480px;
   background: var(--bg);
+  background-image: var(--bg-image);
+  background-attachment: fixed;
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-family: var(--font);
   line-height: 1.5;
 }
 
@@ -65,13 +90,20 @@ body {
   font-weight: 700;
 }
 
-#theme-button {
+#top-actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+#theme-button,
+#settings-button {
   flex: none;
   width: 44px;
   min-height: 44px;
   padding: 0;
   background: var(--card);
-  box-shadow: 0 3px 12px var(--shadow);
+  box-shadow: var(--elev);
   font-size: 20px;
 }
 
@@ -82,12 +114,7 @@ h1 {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(transparent 55%, var(--yellow) 55%);
-  color: #2d2a45;
-}
-
-:root[data-theme="dark"] h1 {
-  background: linear-gradient(transparent 55%, rgba(255, 228, 154, 0.35) 55%);
+  background: linear-gradient(transparent 55%, var(--hl) 55%);
   color: var(--ink);
 }
 
@@ -112,7 +139,7 @@ h2 {
 #progress-track {
   height: 10px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: min(999px, calc(999px * var(--rs)));
   background: var(--card);
   box-shadow: inset 0 0 0 2px var(--lavender);
 }
@@ -120,7 +147,7 @@ h2 {
 #progress-fill {
   width: 0;
   height: 100%;
-  border-radius: 999px;
+  border-radius: min(999px, calc(999px * var(--rs)));
   background: linear-gradient(90deg, var(--pink), var(--lavender));
   transition: width 0.3s;
 }
@@ -132,8 +159,8 @@ h2 {
   padding: 8px;
   background: var(--card);
   border: 2px solid var(--lavender);
-  border-radius: 20px;
-  box-shadow: 0 6px 0 var(--lavender);
+  border-radius: calc(20px * var(--rs));
+  box-shadow: var(--elev-box);
 }
 
 input[type="text"],
@@ -143,7 +170,7 @@ textarea {
   min-height: 48px;
   padding: 0 14px;
   border: 2px solid transparent;
-  border-radius: 14px;
+  border-radius: calc(14px * var(--rs));
   background: var(--field);
   color: var(--ink);
   font: inherit;
@@ -165,7 +192,7 @@ textarea:focus {
 button {
   min-height: 48px;
   border: none;
-  border-radius: 14px;
+  border-radius: calc(14px * var(--rs));
   font: inherit;
   font-size: 15px;
   font-weight: 800;
@@ -175,7 +202,7 @@ button {
 #add-button {
   padding: 0 20px;
   background: var(--pink);
-  color: #2d2a45;
+  color: var(--on-a1);
 }
 
 #add-button:hover,
@@ -190,12 +217,12 @@ input[type="search"] {
   min-height: 44px;
   padding: 0 14px;
   border: 2px solid transparent;
-  border-radius: 14px;
+  border-radius: calc(14px * var(--rs));
   background: var(--card);
   color: var(--ink);
   font: inherit;
   font-size: 16px;
-  box-shadow: 0 3px 12px var(--shadow);
+  box-shadow: var(--elev);
 }
 
 input[type="search"]::placeholder {
@@ -222,7 +249,7 @@ input[type="search"]:focus {
   padding: 0 14px;
   background: var(--card);
   border: 2px solid var(--lavender);
-  border-radius: 999px;
+  border-radius: min(999px, calc(999px * var(--rs)));
   color: var(--ink);
   font-size: 14px;
 }
@@ -230,7 +257,7 @@ input[type="search"]:focus {
 #filters button[aria-pressed="true"],
 #span-tabs button[aria-pressed="true"] {
   background: var(--lavender);
-  color: #2d2a45;
+  color: var(--on-a2);
 }
 
 /* 할 일 목록 (어느 탭에서나 같은 줄 모양) */
@@ -247,9 +274,10 @@ li {
   margin-bottom: 12px;
   padding: 6px 6px 6px 8px;
   background: var(--card);
+  border: var(--bw) solid var(--lavender);
   border-left: 8px solid var(--date-color, var(--done-line));
-  border-radius: 16px;
-  box-shadow: 0 3px 12px var(--shadow);
+  border-radius: calc(16px * var(--rs));
+  box-shadow: var(--elev);
 }
 
 li.done {
@@ -285,7 +313,7 @@ li input[type="checkbox"] {
   flex: none;
   width: 22px;
   height: 22px;
-  accent-color: #a78bfa;
+  accent-color: var(--pink);
 }
 
 li button {
@@ -401,7 +429,7 @@ li button.delete:active {
   max-width: 480px;
   padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  background: var(--card);
+  background: var(--card-solid);
   border-top: 2px solid var(--lavender);
   box-shadow: 0 -4px 16px var(--shadow);
 }
@@ -425,7 +453,7 @@ li button.delete:active {
 
 #tabbar button[aria-selected="true"] {
   background: var(--lavender);
-  color: #2d2a45;
+  color: var(--on-a2);
 }
 
 /* 상세 창 */
@@ -436,9 +464,9 @@ dialog {
   margin: auto;
   padding: 20px 16px;
   overflow-y: auto;
-  background: var(--card);
+  background: var(--card-solid);
   border: none;
-  border-radius: 24px;
+  border-radius: calc(24px * var(--rs));
   box-shadow: 0 16px 48px rgba(45, 42, 69, 0.35);
   color: var(--ink);
 }
@@ -483,7 +511,7 @@ dialog textarea {
 
 .detail-row button[aria-pressed="true"] {
   background: var(--yellow);
-  color: #2d2a45;
+  color: var(--on-yellow);
 }
 
 .detail-actions {
@@ -497,7 +525,7 @@ dialog textarea {
 
 .detail-actions #detail-save {
   background: var(--pink);
-  color: #2d2a45;
+  color: var(--on-a1);
 }
 
 /* 되돌리기 알림 */
@@ -514,10 +542,10 @@ dialog textarea {
   max-width: 448px;
   padding: 6px 6px 6px 18px;
   transform: translateX(-50%);
-  background: #2d2a45;
-  border-radius: 16px;
+  background: var(--ink);
+  border-radius: calc(16px * var(--rs));
   box-shadow: 0 8px 24px rgba(45, 42, 69, 0.3);
-  color: #fff;
+  color: var(--card-solid);
   font-size: 15px;
 }
 
@@ -525,7 +553,7 @@ dialog textarea {
   flex: none;
   padding: 0 16px;
   background: var(--yellow);
-  color: #2d2a45;
+  color: var(--on-yellow);
 }
 
 /* 캘린더 */
@@ -546,7 +574,7 @@ dialog textarea {
   min-width: 44px;
   min-height: 44px;
   background: var(--card);
-  box-shadow: 0 3px 12px var(--shadow);
+  box-shadow: var(--elev);
   color: var(--ink);
   font-size: 20px;
 }
@@ -563,8 +591,8 @@ dialog textarea {
   padding: 8px 4px;
   background: var(--card);
   border: 2px solid var(--lavender);
-  border-radius: 20px;
-  box-shadow: 0 6px 0 var(--lavender);
+  border-radius: calc(20px * var(--rs));
+  box-shadow: var(--elev-box);
 }
 
 #cal-grid .weekday {
@@ -593,7 +621,7 @@ dialog textarea {
   padding: 4px 1px;
   overflow: hidden;
   background: transparent;
-  border-radius: 10px;
+  border-radius: calc(10px * var(--rs));
   color: var(--ink);
   font-size: 13px;
   font-weight: 700;
@@ -609,7 +637,7 @@ dialog textarea {
 
 #cal-grid .cal-day.selected {
   background: var(--lavender);
-  color: #2d2a45;
+  color: var(--on-a2);
 }
 
 #cal-grid .number-row {
@@ -635,8 +663,8 @@ dialog textarea {
   padding: 0 1px;
   overflow: hidden;
   background: var(--date-color);
-  border-radius: 4px;
-  color: #2d2a45;
+  border-radius: calc(4px * var(--rs));
+  color: var(--on-accent);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -663,7 +691,7 @@ dialog textarea {
   min-width: 44px;
   min-height: 44px;
   background: var(--card);
-  box-shadow: 0 3px 12px var(--shadow);
+  box-shadow: var(--elev);
   color: var(--ink);
   font-size: 20px;
 }
@@ -690,9 +718,9 @@ dialog textarea {
 .due {
   display: inline-block;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: min(999px, calc(999px * var(--rs)));
   background: var(--date-color, var(--field));
-  color: #2d2a45;
+  color: var(--on-accent);
   font-size: 12px;
   font-weight: 700;
 }
@@ -711,14 +739,14 @@ dialog textarea {
   align-items: center;
   min-height: 44px;
   background: var(--date-color, var(--field));
-  border-radius: 14px;
-  color: #2d2a45;
+  border-radius: calc(14px * var(--rs));
+  color: var(--on-accent);
 }
 
 .day-head button {
   min-height: 44px;
   background: transparent;
-  color: #2d2a45;
+  color: var(--on-accent);
   font-size: 15px;
 }
 
@@ -780,7 +808,7 @@ dialog textarea {
 .popup-actions #popup-open {
   flex: 2;
   background: var(--pink);
-  color: #2d2a45;
+  color: var(--on-a1);
 }
 
 /* 상세 창: 날짜 옮기기 */
@@ -804,7 +832,7 @@ dialog textarea {
   margin-top: 8px;
   padding: 8px;
   background: var(--field);
-  border-radius: 16px;
+  border-radius: calc(16px * var(--rs));
 }
 
 .picker-head {
@@ -845,7 +873,7 @@ dialog textarea {
   min-height: 38px;
   padding: 0;
   background: transparent;
-  border-radius: 10px;
+  border-radius: calc(10px * var(--rs));
   color: var(--ink);
   font-size: 14px;
   font-weight: 700;
@@ -857,7 +885,7 @@ dialog textarea {
 
 #picker-grid .pick-day.current {
   background: var(--lavender);
-  color: #2d2a45;
+  color: var(--on-a2);
 }
 
 /* 날짜별 목록: 한주·한달 보기 */
@@ -882,7 +910,7 @@ dialog textarea {
   min-width: 44px;
   min-height: 44px;
   background: var(--card);
-  box-shadow: 0 3px 12px var(--shadow);
+  box-shadow: var(--elev);
   color: var(--ink);
   font-size: 20px;
 }
@@ -898,4 +926,289 @@ dialog textarea {
 
 .day-head.empty-day {
   opacity: 0.7;
+}
+
+/* 유리 느낌 테마: 카드 뒤를 흐리게 */
+li,
+#add-box,
+#cal-grid,
+#theme-button,
+#settings-button {
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+
+/* 옵션 화면 */
+#opt-back {
+  min-height: 40px;
+  margin-bottom: 14px;
+  padding: 0 14px;
+  background: var(--card);
+  box-shadow: var(--elev);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+#tab-options label {
+  display: block;
+  margin: 0 4px 6px;
+  color: var(--gray);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#tab-options input[type="text"] {
+  width: 100%;
+}
+
+.hint {
+  margin: 8px 4px 0;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+#opt-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 24px;
+  padding: 0 16px;
+  background: var(--card);
+  border: var(--bw) solid var(--lavender);
+  box-shadow: var(--elev);
+  color: var(--ink);
+  text-align: left;
+}
+
+#opt-theme-row .grow {
+  flex: 1;
+}
+
+#opt-theme-row .value {
+  color: var(--gray);
+  font-weight: 700;
+}
+
+/* 테마 목록 */
+#theme-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 14px;
+  background: var(--card);
+  border: var(--bw) solid var(--lavender);
+  box-shadow: var(--elev);
+  color: var(--ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+.theme-card .swatches {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(3, 14px);
+  gap: 3px;
+}
+
+.theme-card .swatches i {
+  width: 14px;
+  height: 14px;
+  border-radius: min(999px, calc(999px * var(--rs)));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.theme-card .info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.theme-card .name {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.theme-card .desc {
+  color: var(--gray);
+  font-size: 12px;
+}
+
+.theme-card .check {
+  flex: none;
+  color: var(--pink);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* 테마 미리보기 (일반 모드·다크 모드 두 장) */
+.preview-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.preview-pair figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.preview-pair figcaption {
+  margin: 0 0 6px 4px;
+  color: var(--gray);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  overflow: hidden;
+  background: var(--bg);
+  background-image: var(--bg-image);
+  border: 2px solid var(--lavender);
+  border-radius: calc(16px * var(--rs));
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.preview .pv-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview .pv-title {
+  padding: 0 3px;
+  background: linear-gradient(transparent 55%, var(--hl) 55%);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.preview .pv-add {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--card);
+  border: var(--bw) solid var(--lavender);
+  border-radius: calc(10px * var(--rs));
+  box-shadow: var(--elev-box);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+
+.preview .pv-input {
+  flex: 1;
+  padding: 4px 6px;
+  overflow: hidden;
+  background: var(--field);
+  border-radius: calc(7px * var(--rs));
+  color: var(--gray);
+  white-space: nowrap;
+}
+
+.preview .pv-btn {
+  padding: 4px 8px;
+  background: var(--pink);
+  border-radius: calc(7px * var(--rs));
+  color: var(--on-a1);
+  font-weight: 800;
+}
+
+.preview .pv-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  background: var(--card);
+  border: var(--bw) solid var(--lavender);
+  border-left: 5px solid var(--date-color, var(--done-line));
+  border-radius: calc(9px * var(--rs));
+  box-shadow: var(--elev);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+
+.preview .pv-row span {
+  flex: 1;
+}
+
+.preview .pv-row.done span {
+  color: var(--gray);
+  text-decoration: line-through;
+}
+
+.preview .pv-check {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--gray);
+  border-radius: calc(3px * var(--rs));
+}
+
+.preview .pv-check.on {
+  background: var(--pink);
+  border-color: var(--pink);
+}
+
+.preview .pv-star {
+  color: var(--star);
+}
+
+.preview .pv-chip {
+  align-self: flex-start;
+  padding: 1px 6px;
+  background: var(--date-color);
+  border-radius: min(999px, calc(999px * var(--rs)));
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.preview .pv-tabs {
+  display: flex;
+  margin-top: 2px;
+  padding: 3px;
+  background: var(--card-solid);
+  border-top: 2px solid var(--lavender);
+  text-align: center;
+}
+
+.preview .pv-tabs span {
+  flex: 1;
+  padding: 3px 0;
+  border-radius: calc(7px * var(--rs));
+  color: var(--gray);
+  font-weight: 800;
+}
+
+.preview .pv-tabs span.on {
+  background: var(--lavender);
+  color: var(--on-a2);
+}
+
+#preview-name {
+  margin-top: 4px;
+}
+
+#opt-preview .detail-row button {
+  flex: 1;
+}
+
+#preview-choose {
+  background: var(--pink);
+  color: var(--on-a1);
 }

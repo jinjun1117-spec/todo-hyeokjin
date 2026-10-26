@@ -12,7 +12,10 @@
       <p id="today"></p>
       <h1 id="page-title">할 일 목록</h1>
     </div>
-    <button type="button" id="theme-button" aria-label="다크 모드로 바꾸기">🌙</button>
+    <div id="top-actions">
+      <button type="button" id="settings-button" aria-label="옵션 열기">⚙️</button>
+      <button type="button" id="theme-button" aria-label="다크 모드로 바꾸기">🌙</button>
+    </div>
   </header>
 
   <main>
@@ -62,6 +65,45 @@
         <button type="button" id="cal-today">오늘</button>
       </div>
       <div id="cal-grid"></div>
+    </section>
+
+    <section id="tab-options" role="tabpanel" aria-label="옵션" hidden>
+      <button type="button" id="opt-back">‹ 뒤로</button>
+
+      <div id="opt-main">
+        <label for="name-input">이름</label>
+        <input type="text" id="name-input" maxlength="12" placeholder="이름을 적어 주세요" autocomplete="off">
+        <p class="hint">이름을 쓰면 제목 앞에 붙어요. 예) 혁진의 할 일 목록</p>
+        <button type="button" id="opt-theme-row">
+          <span class="grow">테마</span>
+          <span class="value" id="opt-theme-name"></span>
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
+
+      <div id="opt-themes" hidden>
+        <p class="hint">테마를 누르면 일반 모드와 다크 모드 미리보기를 볼 수 있어요.</p>
+        <div id="theme-list"></div>
+      </div>
+
+      <div id="opt-preview" hidden>
+        <h2 id="preview-name"></h2>
+        <p class="hint" id="preview-desc"></p>
+        <div class="preview-pair">
+          <figure>
+            <figcaption>일반 모드</figcaption>
+            <div id="preview-light"></div>
+          </figure>
+          <figure>
+            <figcaption>다크 모드</figcaption>
+            <div id="preview-dark"></div>
+          </figure>
+        </div>
+        <div class="detail-row">
+          <button type="button" id="preview-back">뒤로</button>
+          <button type="button" id="preview-choose">이 테마로 선택</button>
+        </div>
+      </div>
     </section>
 
     <section id="tab-days" role="tabpanel" aria-label="날짜별 목록" hidden>

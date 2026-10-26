@@ -2,8 +2,172 @@ const STORAGE_KEY = 'todos';
 const THEME_KEY = 'theme';
 const UNDO_MILLISECONDS = 5000;
 const WEEKDAYS = '일월화수목금토';
-// 같은 날짜는 언제나 같은 색이 되도록, 날짜 번호를 색 개수로 나눈 나머지로 고른다
-const DATE_COLORS = ['#ffb3d1', '#c9b8ff', '#b8f0d8', '#ffe49a', '#a8d8ff', '#ffc9a8', '#d4f0a0', '#ffb3b3'];
+const SKIN_KEY = 'skin';
+const NAME_KEY = 'name';
+const DEFAULT_SKIN = 'pastel';
+const DATE_COLOR_COUNT = 8;
+
+/* 테마: 색 + 모서리 둥글기(rs) + 글꼴 + 그림자(elev·box) + 테두리 두께(bw).
+   일반 모드(light)와 다크 모드(dark)가 따로 있다.
+   모드 색 순서: 바탕, 카드, 글자, 흐린 글자, 주 포인트, 그 위 글자, 보조 포인트, 그 위 글자, 강조 바탕, 그 위 글자, 빨강, 별 */
+const SANS = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif';
+const SERIF = '"Noto Serif KR", "Nanum Myeongjo", AppleMyungjo, Batang, Georgia, serif';
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK KR", "Apple SD Gothic Neo", monospace';
+const SWISS = '"Helvetica Neue", Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
+const ELEVATIONS = { soft: '0 3px 12px var(--shadow)', hard: '4px 4px 0 var(--ink)', flat: 'none' };
+const BOX_SHADOWS = { offset: '0 6px 0 var(--lavender)', soft: '0 6px 20px var(--shadow)', hard: '6px 6px 0 var(--ink)', flat: 'none' };
+
+function palette(bg, card, ink, gray, a1, onA1, a2, onA2, hi, onHi, rose, star, extra) {
+  return Object.assign({ bg: bg, card: card, ink: ink, gray: gray, a1: a1, onA1: onA1, a2: a2, onA2: onA2, hi: hi, onHi: onHi, rose: rose, star: star }, extra || {});
+}
+
+const THEMES = [
+  {
+    id: 'clean', name: '클린 미니멀', desc: '군더더기 없는 흑백 위주의 깔끔한 화면',
+    rs: 0.5, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#16161a',
+    dc: ['#e9e9ee', '#dbe5f0', '#e1ecda', '#f2e8d6', '#e5dcf1', '#f1dde1', '#d6ece9', '#efeed4'],
+    light: palette('#f7f7f8', '#ffffff', '#16161a', '#86868e', '#16161a', '#ffffff', '#dcdce2', '#16161a', '#ececf0', '#16161a', '#d92d4f', '#e8a600'),
+    dark: palette('#101012', '#1a1a1e', '#f1f1f4', '#8c8c96', '#f1f1f4', '#101012', '#3a3a42', '#f1f1f4', '#2a2a30', '#f1f1f4', '#ff6b86', '#f2b600'),
+  },
+  {
+    id: 'fintech', name: '산뜻한 핀테크', desc: '맑은 파랑과 넉넉하게 둥근 카드',
+    rs: 1.1, font: SANS, elev: 'soft', box: 'soft', bw: 0, on: '#191f28',
+    dc: ['#cfe2ff', '#d2f0e6', '#ffe3b3', '#e1d9ff', '#ffd6d9', '#c4ebf6', '#e3f2c6', '#f8d9ec'],
+    light: palette('#f2f6fc', '#ffffff', '#191f28', '#8b95a1', '#3182f6', '#ffffff', '#cfe2ff', '#191f28', '#d9ecff', '#191f28', '#f04452', '#ffb300'),
+    dark: palette('#0f1218', '#1a1f29', '#f2f4f6', '#8b95a1', '#4593fc', '#ffffff', '#2d4468', '#f2f4f6', '#1e3a63', '#f2f4f6', '#ff6b78', '#ffc233'),
+  },
+  {
+    id: 'public', name: '공공 신뢰', desc: '정부 서비스처럼 차분한 파랑과 또렷한 글씨',
+    rs: 0.4, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#1b2733',
+    dc: ['#d6e4f5', '#d6eedd', '#f7e6c4', '#e6dcf0', '#f6d9d9', '#cfeaee', '#e8efc9', '#f0dde8'],
+    light: palette('#f4f6f9', '#ffffff', '#1b2733', '#5f6b7a', '#0b5cab', '#ffffff', '#b9c7d9', '#1b2733', '#e3ebf5', '#1b2733', '#c62828', '#e08a00'),
+    dark: palette('#0f1923', '#172433', '#eaf0f7', '#9aa8b8', '#5aa0ee', '#0b1620', '#34506e', '#eaf0f7', '#22384f', '#eaf0f7', '#ff7a7a', '#f5b942'),
+  },
+  {
+    id: 'control', name: '다크 데이터 관제실', desc: '어두운 바탕에 청록 포인트, 표와 숫자 느낌',
+    rs: 0.3, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#04120f',
+    dc: ['#19c3a6', '#4aa8ff', '#ffb020', '#b48cff', '#ff6f91', '#7be0ff', '#a6e22e', '#ff9f5a'],
+    light: palette('#eef3f6', '#ffffff', '#0f1c26', '#5c7385', '#0f9d86', '#ffffff', '#b5c8d4', '#0f1c26', '#d6e6ee', '#0f1c26', '#d63a5a', '#d98a00'),
+    dark: palette('#0a0f14', '#121a22', '#d6e4ee', '#6f8596', '#19c3a6', '#04120f', '#24465a', '#d6e4ee', '#17303d', '#d6e4ee', '#ff5c7a', '#ffb020'),
+  },
+  {
+    id: 'bento', name: '벤토 그리드', desc: '큼직하게 둥근 타일이 모인 느낌',
+    rs: 1.4, font: SANS, elev: 'flat', box: 'soft', bw: 0, on: '#1c1f26',
+    dc: ['#ffd9c7', '#d8e6ff', '#d6f2df', '#f3e1ff', '#fff0b8', '#ffd6e6', '#d3f1f5', '#e6eccf'],
+    light: palette('#eceff3', '#ffffff', '#1c1f26', '#7b8394', '#ff7a45', '#1c1f26', '#d7dbe4', '#1c1f26', '#ffe1d3', '#1c1f26', '#e0405b', '#f5a700'),
+    dark: palette('#121418', '#1d2026', '#eef0f4', '#8e96a6', '#ff8a5c', '#1a0f0a', '#343944', '#eef0f4', '#3a2a22', '#eef0f4', '#ff7b93', '#f5b82e'),
+  },
+  {
+    id: 'glass', name: '소프트 글래스', desc: '반투명 유리 카드와 은은하게 번지는 배경',
+    rs: 1.5, font: SANS, elev: 'soft', box: 'soft', bw: 1, blur: '14px', on: '#1e293b',
+    dc: ['#c7d2fe', '#fbcfe8', '#bae6fd', '#bbf7d0', '#fde68a', '#ddd6fe', '#fecdd3', '#a7f3d0'],
+    light: palette('#e6ecfb', 'rgba(255, 255, 255, 0.55)', '#1e293b', '#64748b', '#6366f1', '#ffffff', '#c7d2fe', '#1e293b', '#e0e7ff', '#1e293b', '#e11d48', '#f59e0b',
+      { cardSolid: '#f1f4ff', bgImage: 'linear-gradient(135deg, #dbeafe, #fce7f3 50%, #e0f2fe)' }),
+    dark: palette('#1b1a4a', 'rgba(255, 255, 255, 0.09)', '#e8ebff', '#a5b0d6', '#8b8ffa', '#0b0d2a', '#4a4fa8', '#ffffff', '#3a3f8a', '#ffffff', '#ff7fa0', '#fbbf24',
+      { cardSolid: '#26256a', bgImage: 'linear-gradient(135deg, #1e1b4b, #312e81 50%, #0f172a)' }),
+  },
+  {
+    id: 'hanji', name: '한지 에디토리얼', desc: '종이 질감의 따뜻한 바탕과 명조 글씨',
+    rs: 0.3, font: SERIF, elev: 'flat', box: 'flat', bw: 1, on: '#2b2620',
+    dc: ['#e8d5c4', '#d9dfc9', '#dccfe0', '#efe0b6', '#cfdde0', '#e9c9c4', '#d6d9c0', '#e2cfd6'],
+    light: palette('#f4efe4', '#fbf8f0', '#2b2620', '#8a7f6d', '#8c2f2f', '#fbf8f0', '#cdbf9f', '#2b2620', '#e8dcc0', '#2b2620', '#a83232', '#b8860b'),
+    dark: palette('#1c1814', '#26201a', '#eee4d0', '#a89c86', '#d9805f', '#1c1814', '#5a4d3a', '#eee4d0', '#3a2f22', '#eee4d0', '#e07a6a', '#d9a441'),
+  },
+  {
+    id: 'brutal', name: '네오 브루탈 팝', desc: '굵은 검정 테두리와 딱딱한 그림자',
+    rs: 0, font: SANS, elev: 'hard', box: 'hard', bw: 2, on: '#111111',
+    dc: ['#ff8fc4', '#8fd4ff', '#ffe14d', '#a8f08a', '#c9a6ff', '#ffb35c', '#7ef0d0', '#ff8a8a'],
+    light: palette('#fff7d6', '#ffffff', '#111111', '#555555', '#ff5ca8', '#111111', '#111111', '#ffffff', '#ffe14d', '#111111', '#e0245e', '#ffb800'),
+    dark: palette('#151515', '#242424', '#ffffff', '#bbbbbb', '#ff6fb5', '#111111', '#ffffff', '#111111', '#ffe14d', '#111111', '#ff6b8a', '#ffd23f'),
+  },
+  {
+    id: 'aurora', name: '오로라 그라데이션', desc: '북극 하늘처럼 번지는 색의 배경',
+    rs: 1.3, font: SANS, elev: 'soft', box: 'soft', bw: 0, blur: '8px', on: '#20243a',
+    dc: ['#b3f0e6', '#c9b8ff', '#ffc2e1', '#a8d8ff', '#d8f7a8', '#ffe0a3', '#9ff0ff', '#e2b8ff'],
+    light: palette('#e9f3fb', 'rgba(255, 255, 255, 0.7)', '#20243a', '#6b7390', '#7c4dff', '#ffffff', '#b9a8ff', '#20243a', '#d1c4ff', '#20243a', '#e91e63', '#ffb300',
+      { cardSolid: '#f6f4ff', bgImage: 'linear-gradient(160deg, #e0f7fa, #ede7f6 45%, #fce4ec)' }),
+    dark: palette('#0a1a2c', 'rgba(255, 255, 255, 0.07)', '#eaf6ff', '#8fb3c9', '#5ef2c8', '#04211c', '#3b7d8e', '#eaf6ff', '#234a5c', '#eaf6ff', '#ff7aa2', '#ffd166',
+      { cardSolid: '#14213a', bgImage: 'linear-gradient(160deg, #071a2b, #1b1245 50%, #0d2b3a)' }),
+  },
+  {
+    id: 'neon', name: '네온 다크', desc: '짙은 보라 밤에 번쩍이는 분홍과 하늘색',
+    rs: 0.6, font: SANS, elev: 'soft', box: 'soft', bw: 1, on: '#150d24',
+    dc: ['#ff7be9', '#7bf0ff', '#fff27b', '#a9ff7b', '#c19bff', '#ffb27b', '#7bffd0', '#ff7b9c'],
+    light: palette('#f7f0ff', '#ffffff', '#2a1148', '#7c5ea8', '#d900b0', '#ffffff', '#00b8d4', '#06222a', '#ead6ff', '#2a1148', '#e0204a', '#e6b800'),
+    dark: palette('#0b0713', '#150d24', '#f6eaff', '#9d86c4', '#ff2bd6', '#ffffff', '#00e5ff', '#06222a', '#3a1a5c', '#f6eaff', '#ff4d6d', '#ffe600'),
+  },
+  {
+    id: 'sand', name: '웜 샌드', desc: '모래빛 바탕과 테라코타 포인트',
+    rs: 1, font: SANS, elev: 'soft', box: 'soft', bw: 0, on: '#3b2f26',
+    dc: ['#f3d2b8', '#e6dcb0', '#d7e0c4', '#f0c4b4', '#dcc9e0', '#c9dbe0', '#f1e0a8', '#e8c6a8'],
+    light: palette('#f6efe6', '#fffaf2', '#3b2f26', '#9a8878', '#c8794a', '#ffffff', '#e3cfb6', '#3b2f26', '#f1dcc0', '#3b2f26', '#b5412f', '#d9961a'),
+    dark: palette('#1d1712', '#2a221b', '#f2e6d6', '#b09c86', '#e29a6b', '#1d1712', '#5c4a39', '#f2e6d6', '#44352a', '#f2e6d6', '#f0907c', '#e0a93a'),
+  },
+  {
+    id: 'swiss', name: '스위스 그리드', desc: '흑백과 빨강, 각진 모서리의 정돈된 격자',
+    rs: 0, font: SWISS, elev: 'flat', box: 'flat', bw: 1, on: '#111111',
+    dc: ['#f1f1f1', '#e8e8e8', '#dedede', '#d3d3d3', '#c8c8c8', '#fadbd8', '#ffe5e3', '#ededed'],
+    light: palette('#ffffff', '#ffffff', '#111111', '#6a6a6a', '#e30613', '#ffffff', '#111111', '#ffffff', '#f3f3f3', '#111111', '#e30613', '#f2a900'),
+    dark: palette('#111111', '#1a1a1a', '#f5f5f5', '#9a9a9a', '#ff3b30', '#ffffff', '#f5f5f5', '#111111', '#2a2a2a', '#f5f5f5', '#ff5a50', '#ffb800'),
+  },
+  {
+    id: 'pastel', name: '파스텔 팝', desc: '분홍·보라 파스텔의 통통 튀는 느낌 (기본)',
+    rs: 1, font: SANS, elev: 'soft', box: 'offset', bw: 0, on: '#2d2a45',
+    dc: ['#ffb3d1', '#c9b8ff', '#b8f0d8', '#ffe49a', '#a8d8ff', '#ffc9a8', '#d4f0a0', '#ffb3b3'],
+    light: palette('#fff5fb', '#ffffff', '#2d2a45', '#9a95b3', '#ff9ec7', '#2d2a45', '#c9b8ff', '#2d2a45', '#ffe49a', '#2d2a45', '#d6336c', '#f5b301'),
+    dark: palette('#1f1a33', '#2b2547', '#f1edff', '#a9a2c9', '#ff9ec7', '#2d2a45', '#a28ff0', '#2d2a45', '#ffe49a', '#2d2a45', '#ff7aa8', '#f5b301',
+      { hl: 'rgba(255, 228, 154, 0.35)' }),
+  },
+  {
+    id: 'navy', name: '코퍼레이트 네이비', desc: '진한 남색과 금색 포인트의 업무용 화면',
+    rs: 0.6, font: SANS, elev: 'soft', box: 'flat', bw: 1, on: '#14213d',
+    dc: ['#d3dcf0', '#f3e1b8', '#cfe7e3', '#e3d3ee', '#f1d0d0', '#c8def3', '#dfe8c5', '#ecd9c6'],
+    light: palette('#eef1f6', '#ffffff', '#14213d', '#6b7a99', '#14213d', '#ffffff', '#b8c4dc', '#14213d', '#dfe6f2', '#14213d', '#c0392b', '#e0a100'),
+    dark: palette('#0a1226', '#121d38', '#e8eefc', '#8fa0c4', '#fca311', '#14213d', '#2c3e66', '#e8eefc', '#1e2e52', '#e8eefc', '#ff7b7b', '#fca311'),
+  },
+  {
+    id: 'retro', name: '레트로 그린 스크린', desc: '검은 화면에 초록 글자, 옛날 단말기 느낌',
+    rs: 0, font: MONO, elev: 'flat', box: 'flat', bw: 1, on: '#021008',
+    dc: ['#b8f5c2', '#e6ff99', '#99f0d8', '#c8e6a0', '#a6e6b8', '#d9f2a6', '#8fe0a8', '#ccf5b0'],
+    light: palette('#e8f5e9', '#f4fbf4', '#0b3d1a', '#4f7a5a', '#0b5d1e', '#e8f5e9', '#8fc29a', '#0b3d1a', '#cfe8d3', '#0b3d1a', '#b3261e', '#8a7a00'),
+    dark: palette('#021008', '#04200f', '#33ff66', '#1fa84a', '#33ff66', '#021008', '#1a7a38', '#33ff66', '#0b3a1c', '#33ff66', '#ff5e5e', '#e6ff33'),
+  },
+];
+
+// 테마와 모드(light·dark)에 맞는 CSS 변수 값 묶음
+function themeVars(theme, mode) {
+  const m = theme[mode];
+  const vars = {
+    '--bg': m.bg,
+    '--card': m.card,
+    '--card-solid': m.cardSolid || m.card,
+    '--ink': m.ink,
+    '--gray': m.gray,
+    '--pink': m.a1,
+    '--on-a1': m.onA1,
+    '--lavender': m.a2,
+    '--on-a2': m.onA2,
+    '--yellow': m.hi,
+    '--on-yellow': m.onHi,
+    '--hl': m.hl || m.hi,
+    '--rose': m.rose,
+    '--star': m.star,
+    '--on-accent': theme.on,
+    '--rs': String(theme.rs),
+    '--font': theme.font,
+    '--elev': ELEVATIONS[theme.elev],
+    '--elev-box': BOX_SHADOWS[theme.box],
+    '--bw': theme.bw + 'px',
+    '--blur': theme.blur ? 'blur(' + theme.blur + ')' : 'none',
+    '--bg-image': m.bgImage || 'none',
+  };
+  theme.dc.forEach(function (color, i) { vars['--dc' + i] = color; });
+  return vars;
+}
+
+function findTheme(id) {
+  return THEMES.find(function (t) { return t.id === id; }) || THEMES.find(function (t) { return t.id === DEFAULT_SKIN; });
+}
 
 function byId(id) {
   return document.getElementById(id);
@@ -38,6 +202,12 @@ const daysList = byId('days-list');
 const daysEmpty = byId('days-empty');
 const todayText = byId('today');
 const themeButton = byId('theme-button');
+const settingsButton = byId('settings-button');
+const nameInput = byId('name-input');
+const optMain = byId('opt-main');
+const optThemes = byId('opt-themes');
+const optPreview = byId('opt-preview');
+const themeList = byId('theme-list');
 const toast = byId('toast');
 const toastText = byId('toast-text');
 const undoButton = byId('undo-button');
@@ -46,6 +216,7 @@ const panels = {
   todo: byId('tab-todo'),
   calendar: byId('tab-calendar'),
   days: byId('tab-days'),
+  options: byId('tab-options'),
 };
 const detail = byId('detail');
 const detailTitle = byId('detail-title');
@@ -58,7 +229,6 @@ const pickerGrid = byId('picker-grid');
 const detailPick = byId('detail-pick');
 
 const TAB_TITLES = {
-  todo: '할 일 목록',
   calendar: '캘린더',
   days: '날짜별 목록',
 };
@@ -100,6 +270,11 @@ let activeTab = 'todo';
 let viewDate = todayString();
 let filter = 'all';
 let query = '';
+let skinId = readSkin();
+let userName = readName();
+let optionsPage = 'main';
+let previewId = null;
+let lastTab = 'todo';
 let spanMode = 'week';
 let spanAnchor = todayString();
 let undoAction = null;
@@ -155,10 +330,11 @@ function ddayText(due) {
   return diff > 0 ? 'D-' + diff : 'D+' + Math.abs(diff);
 }
 
+// 같은 날짜는 언제나 같은 색이 되도록, 날짜 번호를 색 개수로 나눈 나머지로 고른다(색 자체는 테마가 정한다)
 function dateColor(due) {
   const p = parseDue(due);
   const dayNumber = Math.floor(Date.UTC(p.year, p.month - 1, p.day) / 86400000);
-  return DATE_COLORS[dayNumber % DATE_COLORS.length];
+  return 'var(--dc' + (dayNumber % DATE_COLOR_COUNT) + ')';
 }
 
 // 보이는 순서: 중요한 진행 중(0) → 나머지 진행 중(1) → 중요한 완료(2) → 나머지 완료(3)
@@ -881,8 +1057,21 @@ function render() {
   tabButtons.forEach(function (b) {
     b.setAttribute('aria-selected', String(b.dataset.tab === activeTab));
   });
-  pageTitle.textContent = TAB_TITLES[activeTab];
-  document.title = TAB_TITLES[activeTab];
+  renderOptions();
+  const title = pageTitleText();
+  pageTitle.textContent = title;
+  document.title = title;
+}
+
+// 화면 맨 위 제목: 할 일 탭은 이름이 있으면 "○○의 할 일 목록"
+function pageTitleText() {
+  if (activeTab === 'options') {
+    if (optionsPage === 'themes') return '테마';
+    if (optionsPage === 'preview') return '테마 미리보기';
+    return '옵션';
+  }
+  if (activeTab === 'todo') return userName ? userName + '의 할 일 목록' : '할 일 목록';
+  return TAB_TITLES[activeTab];
 }
 
 function switchTab(name) {
@@ -911,15 +1100,48 @@ function goToday() {
   render();
 }
 
+/* 저장소 읽고 쓰기(막힌 브라우저에서도 화면은 동작한다) */
+function storeGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+function storeSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    // 저장이 막혀도 이번 화면에서는 바뀐다
+  }
+}
+
+function readSkin() {
+  const saved = storeGet(SKIN_KEY);
+  return THEMES.some(function (t) { return t.id === saved; }) ? saved : DEFAULT_SKIN;
+}
+
+function readName() {
+  return (storeGet(NAME_KEY) || '').trim();
+}
+
 /* 다크 모드: 저장된 선택이 없으면 기기 설정을 따른다 */
 function readTheme() {
-  try {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === 'dark' || saved === 'light') return saved;
-  } catch (e) {
-    // 읽기가 막혀도 기기 설정으로 넘어간다
-  }
+  const saved = storeGet(THEME_KEY);
+  if (saved === 'dark' || saved === 'light') return saved;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+// 지금 고른 테마와 모드의 색·모양을 화면 전체에 적용한다
+function applyLook() {
+  const mode = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+  const vars = themeVars(findTheme(skinId), mode);
+  Object.keys(vars).forEach(function (name) {
+    document.documentElement.style.setProperty(name, vars[name]);
+  });
+  document.documentElement.style.colorScheme = mode;
+  document.documentElement.dataset.skin = skinId;
 }
 
 function applyTheme(theme) {
@@ -927,22 +1149,143 @@ function applyTheme(theme) {
   const dark = theme === 'dark';
   themeButton.textContent = dark ? '☀️' : '🌙';
   themeButton.setAttribute('aria-label', dark ? '밝은 모드로 바꾸기' : '다크 모드로 바꾸기');
+  applyLook();
 }
 
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(next);
-  try {
-    localStorage.setItem(THEME_KEY, next);
-  } catch (e) {
-    // 저장이 막혀도 이번 화면에서는 바뀐다
+  storeSet(THEME_KEY, next);
+  render();
+}
+
+function setSkin(id) {
+  skinId = id;
+  storeSet(SKIN_KEY, id);
+  applyLook();
+}
+
+/* 옵션 화면: 이름, 테마 목록, 테마 미리보기 */
+function openOptions() {
+  if (activeTab !== 'options') lastTab = activeTab;
+  activeTab = 'options';
+  optionsPage = 'main';
+  render();
+}
+
+function optionsBack() {
+  if (optionsPage === 'preview') optionsPage = 'themes';
+  else if (optionsPage === 'themes') optionsPage = 'main';
+  else activeTab = lastTab;
+  render();
+}
+
+function buildPreview(theme, mode) {
+  const box = document.createElement('div');
+  box.className = 'preview';
+  const vars = themeVars(theme, mode);
+  Object.keys(vars).forEach(function (name) { box.style.setProperty(name, vars[name]); });
+  box.innerHTML =
+    '<div class="pv-top"><span class="pv-title">할 일 목록</span><span>' + (mode === 'dark' ? '☀️' : '🌙') + '</span></div>' +
+    '<div class="pv-add"><span class="pv-input">할 일을 적어 보세요</span><span class="pv-btn">추가</span></div>' +
+    '<div class="pv-row" style="--date-color: var(--dc0)"><i class="pv-check"></i><span>장보기</span><b class="pv-star">★</b></div>' +
+    '<div class="pv-row" style="--date-color: var(--dc1)"><i class="pv-check"></i><span>운동 30분</span><b>☆</b></div>' +
+    '<div class="pv-row done" style="--date-color: var(--dc2)"><i class="pv-check on"></i><span>책 읽기</span><b>☆</b></div>' +
+    '<span class="pv-chip" style="--date-color: var(--dc3)">10월 29일 · D-3</span>' +
+    '<div class="pv-tabs"><span class="on">✅ 할 일</span><span>📅</span><span>📋</span></div>';
+  return box;
+}
+
+function renderOptions() {
+  optMain.hidden = optionsPage !== 'main';
+  optThemes.hidden = optionsPage !== 'themes';
+  optPreview.hidden = optionsPage !== 'preview';
+  settingsButton.setAttribute('aria-pressed', String(activeTab === 'options'));
+  if (activeTab !== 'options') return;
+
+  byId('opt-theme-name').textContent = findTheme(skinId).name;
+  if (document.activeElement !== nameInput) nameInput.value = userName;
+
+  if (optionsPage === 'themes') {
+    themeList.replaceChildren(...THEMES.map(function (theme) {
+      const card = makeButton('', 'theme-card', function () {
+        previewId = theme.id;
+        optionsPage = 'preview';
+        render();
+      });
+      card.dataset.theme = theme.id;
+      card.setAttribute('aria-label', theme.name + ' 미리보기');
+      const swatches = document.createElement('span');
+      swatches.className = 'swatches';
+      [theme.light.bg, theme.light.a1, theme.light.a2, theme.dark.bg, theme.dark.a1, theme.dc[0]].forEach(function (color) {
+        const dot = document.createElement('i');
+        dot.style.background = color;
+        swatches.append(dot);
+      });
+      const info = document.createElement('span');
+      info.className = 'info';
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = theme.name;
+      const desc = document.createElement('span');
+      desc.className = 'desc';
+      desc.textContent = theme.desc;
+      info.append(name, desc);
+      card.append(swatches, info);
+      if (theme.id === skinId) {
+        const check = document.createElement('span');
+        check.className = 'check';
+        check.textContent = '✓';
+        card.append(check);
+      }
+      return card;
+    }));
   }
+
+  if (optionsPage === 'preview') {
+    const theme = findTheme(previewId);
+    byId('preview-name').textContent = theme.name;
+    byId('preview-desc').textContent = theme.desc;
+    byId('preview-light').replaceChildren(buildPreview(theme, 'light'));
+    byId('preview-dark').replaceChildren(buildPreview(theme, 'dark'));
+    byId('preview-choose').textContent = theme.id === skinId ? '지금 쓰는 테마예요' : '이 테마로 선택';
+    byId('preview-choose').disabled = theme.id === skinId;
+  }
+}
+
+function chooseTheme() {
+  const theme = findTheme(previewId);
+  const before = skinId;
+  setSkin(theme.id);
+  optionsPage = 'main';
+  render();
+  showToast('테마를 바꿨어요: ' + theme.name, function () { setSkin(before); });
 }
 
 /* 버튼과 칸에 동작 달기 */
 enableDrag(list);
 undoButton.addEventListener('click', undo);
 themeButton.addEventListener('click', toggleTheme);
+settingsButton.addEventListener('click', function () {
+  if (activeTab === 'options') {
+    activeTab = lastTab;
+    render();
+  } else {
+    openOptions();
+  }
+});
+byId('opt-back').addEventListener('click', optionsBack);
+byId('opt-theme-row').addEventListener('click', function () {
+  optionsPage = 'themes';
+  render();
+});
+byId('preview-back').addEventListener('click', optionsBack);
+byId('preview-choose').addEventListener('click', chooseTheme);
+nameInput.addEventListener('input', function () {
+  userName = nameInput.value.trim();
+  storeSet(NAME_KEY, userName);
+  render();
+});
 addButton.addEventListener('click', addTodo);
 input.addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && !e.isComposing) addTodo();
