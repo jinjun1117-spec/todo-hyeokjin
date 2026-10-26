@@ -25,9 +25,11 @@ const count = byId('count');
 const clearButton = byId('clear-done');
 const calTitle = byId('cal-title');
 const calGrid = byId('cal-grid');
-const calDayTitle = byId('cal-day-title');
-const calendarList = byId('calendar-list');
-const calendarEmpty = byId('calendar-empty');
+const popup = byId('day-popup');
+const popupTitle = byId('popup-title');
+const popupList = byId('popup-list');
+const popupEmpty = byId('popup-empty');
+const popupOpen = byId('popup-open');
 const searchInput = byId('search-input');
 const rangeButtons = document.querySelectorAll('#range button');
 const sampleButton = byId('sample-button');
@@ -55,7 +57,8 @@ const TAB_TITLES = {
   calendar: '캘린더',
   days: '날짜별 목록',
 };
-const CALENDAR_CHIPS = 3;
+const CALENDAR_CHIPS = 2;
+const POPUP_ITEMS = 3;
 
 // 테스트 할 일: [오늘에서 며칠 뒤인지, 제목, 중요, 완료, 메모]. 5개짜리 날이 두 번(오늘, +2일) 있다
 const SAMPLE_TODOS = [
@@ -100,6 +103,7 @@ let detailId = null;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let selectedDate = todayString();
+let popupDate = null;
 
 /* 날짜: 날짜 글자('2026-10-29')를 보기 좋은 글과 색으로 바꾼다 */
 function todayString() {
@@ -146,6 +150,12 @@ function dateColor(due) {
   const p = parseDue(due);
   const dayNumber = Math.floor(Date.UTC(p.year, p.month - 1, p.day) / 86400000);
   return DATE_COLORS[dayNumber % DATE_COLORS.length];
+}
+
+// 중요(★)한 할 일을 위로 올린다. 같은 무리 안에서는 원래 순서를 지킨다
+function importanceFirst(items) {
+  return items.filter(function (t) { return t.important; })
+    .concat(items.filter(function (t) { return !t.important; }));
 }
 
 /* 저장하고 불러오기 */
@@ -299,6 +309,7 @@ function undoRemove() {
 
 function showToast(message) {
   toastText.textContent = message;
+  (popup.open ? popup : document.body).append(toast);
   toast.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(hideToast, UNDO_MILLISECONDS);
@@ -413,7 +424,7 @@ function renderTodoTab() {
   dayDday.style.setProperty('--date-color', dateColor(viewDate));
 
   const dayItems = todos.filter(function (t) { return t.due === viewDate; });
-  const shown = dayItems.filter(function (t) {
+  const shown = importanceFirst(dayItems).filter(function (t) {
     if (filter === 'important') return t.important;
     if (filter === 'active') return !t.done;
     if (filter === 'done') return t.done;
@@ -460,7 +471,7 @@ function renderCalendarTab() {
   const today = todayString();
   for (let day = 1; day <= daysInMonth; day++) {
     const due = dueString(calYear, calMonth, day);
-    const items = todos.filter(function (t) { return t.due === due; });
+    const items = importanceFirst(todos.filter(function (t) { return t.due === due; }));
 
     const cell = document.createElement('button');
     cell.type = 'button';
@@ -489,18 +500,28 @@ function renderCalendarTab() {
       more.textContent = '+' + (items.length - CALENDAR_CHIPS);
       cell.append(more);
     }
-    cell.addEventListener('click', function () {
-      selectedDate = due;
-      render();
-    });
+    cell.addEventListener('click', function () { openPopup(due); });
     cells.push(cell);
   }
   calGrid.replaceChildren(...cells);
+}
 
-  const dayItems = todos.filter(function (t) { return t.due === selectedDate; });
-  calDayTitle.textContent = dateText(selectedDate) + ' · ' + ddayText(selectedDate);
-  calendarList.replaceChildren(...dayItems.map(makeItem));
-  calendarEmpty.hidden = dayItems.length > 0;
+// 날짜 창: 그날 할 일을 중요한 것부터 몇 개만 보여 준다
+function openPopup(due) {
+  selectedDate = due;
+  popupDate = due;
+  render();
+  popup.showModal();
+}
+
+function renderPopup() {
+  if (!popupDate) return;
+  const items = importanceFirst(todos.filter(function (t) { return t.due === popupDate; }));
+  popupTitle.textContent = dateText(popupDate) + ' · ' + ddayText(popupDate);
+  popupList.replaceChildren(...items.slice(0, POPUP_ITEMS).map(makeItem));
+  popupEmpty.hidden = items.length > 0;
+  const more = items.length - POPUP_ITEMS;
+  popupOpen.textContent = more > 0 ? '이 날짜 할 일 보기 (' + more + '개 더)' : '이 날짜 할 일 보기';
 }
 
 function renderDaysTab() {
@@ -518,7 +539,7 @@ function renderDaysTab() {
   dates.sort();
 
   daysList.replaceChildren(...dates.map(function (due) {
-    const items = matches.filter(function (t) { return t.due === due; });
+    const items = importanceFirst(matches.filter(function (t) { return t.due === due; }));
 
     const group = document.createElement('div');
     group.className = 'day-group';
@@ -559,6 +580,7 @@ function render() {
   renderTodoTab();
   renderCalendarTab();
   renderDaysTab();
+  renderPopup();
 
   Object.keys(panels).forEach(function (name) {
     panels[name].hidden = name !== activeTab;
@@ -667,9 +689,19 @@ tabButtons.forEach(function (b) {
 byId('cal-prev').addEventListener('click', function () { moveMonth(-1); });
 byId('cal-next').addEventListener('click', function () { moveMonth(1); });
 byId('cal-today').addEventListener('click', goToday);
-byId('cal-open').addEventListener('click', function () {
-  openDay(selectedDate);
+byId('popup-close').addEventListener('click', function () { popup.close(); });
+popupOpen.addEventListener('click', function () {
+  const due = popupDate;
+  popup.close();
+  openDay(due);
   input.focus();
+});
+popup.addEventListener('click', function (e) {
+  if (e.target === popup) popup.close();
+});
+popup.addEventListener('close', function () {
+  popupDate = null;
+  document.body.append(toast);
 });
 
 detailImportant.addEventListener('click', function () {

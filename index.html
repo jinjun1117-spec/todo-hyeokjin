@@ -62,12 +62,6 @@
         <button type="button" id="cal-today">오늘</button>
       </div>
       <div id="cal-grid"></div>
-      <div id="cal-day">
-        <h3 id="cal-day-title"></h3>
-        <ul id="calendar-list"></ul>
-        <p id="calendar-empty" class="empty">이 날 할 일이 없어요</p>
-        <button type="button" id="cal-open">이 날짜 할 일 보기</button>
-      </div>
     </section>
 
     <section id="tab-days" role="tabpanel" aria-label="날짜별 목록" hidden>
@@ -87,6 +81,16 @@
     <button type="button" role="tab" data-tab="calendar" aria-selected="false"><span aria-hidden="true">📅</span>캘린더</button>
     <button type="button" role="tab" data-tab="days" aria-selected="false"><span aria-hidden="true">📋</span>날짜별 목록</button>
   </nav>
+
+  <dialog id="day-popup" aria-labelledby="popup-title">
+    <h2 id="popup-title"></h2>
+    <ul id="popup-list"></ul>
+    <p id="popup-empty" class="empty">이 날 할 일이 없어요</p>
+    <div class="detail-row popup-actions">
+      <button type="button" id="popup-close">닫기</button>
+      <button type="button" id="popup-open">이 날짜 할 일 보기</button>
+    </div>
+  </dialog>
 
   <dialog id="detail" aria-labelledby="detail-heading">
     <h2 id="detail-heading">할 일 상세</h2>
