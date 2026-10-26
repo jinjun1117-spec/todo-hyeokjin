@@ -35,8 +35,12 @@ h1 {
   background: linear-gradient(transparent 55%, var(--yellow) 55%);
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* 입력 칸 + 추가 버튼 */
-body > div {
+#add-box {
   display: flex;
   gap: 8px;
   padding: 8px;
@@ -90,9 +94,30 @@ button {
   background: var(--pink-dark);
 }
 
+/* 보기 고르기 */
+#filters {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+#filters button {
+  min-height: 36px;
+  padding: 0 14px;
+  background: var(--card);
+  border: 2px solid var(--lavender);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+#filters button[aria-pressed="true"] {
+  background: var(--lavender);
+}
+
 /* 할 일 목록 */
 ul {
-  margin: 26px 0 0;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -124,6 +149,15 @@ li input[type="checkbox"] {
   accent-color: #a78bfa;
 }
 
+li.done {
+  border-left-color: #e3dff0;
+}
+
+li.done span {
+  color: var(--gray);
+  text-decoration: line-through;
+}
+
 li span {
   flex: 1;
   min-width: 0;
@@ -149,4 +183,30 @@ li button:active {
   text-align: center;
   color: var(--gray);
   font-size: 15px;
+}
+
+/* 목록 아래 줄 */
+#footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 0 4px;
+  color: var(--gray);
+  font-size: 14px;
+}
+
+#clear-done {
+  min-height: 40px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--rose);
+  font-size: 14px;
+}
+
+#clear-done:disabled {
+  color: var(--gray);
+  opacity: 0.5;
+  cursor: default;
 }
