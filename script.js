@@ -34,7 +34,7 @@ const THEMES = [
     rs: 1.1, font: SANS, elev: 'soft', box: 'soft', bw: 0, on: '#191f28',
     dc: ['#cfe2ff', '#d2f0e6', '#ffe3b3', '#e1d9ff', '#ffd6d9', '#c4ebf6', '#e3f2c6', '#f8d9ec'],
     light: palette('#f2f6fc', '#ffffff', '#191f28', '#8b95a1', '#3182f6', '#ffffff', '#cfe2ff', '#191f28', '#d9ecff', '#191f28', '#f04452', '#ffb300'),
-    dark: palette('#0f1218', '#1a1f29', '#f2f4f6', '#8b95a1', '#4593fc', '#ffffff', '#2d4468', '#f2f4f6', '#1e3a63', '#f2f4f6', '#ff6b78', '#ffc233'),
+    dark: palette('#0f1218', '#1a1f29', '#f2f4f6', '#8b95a1', '#4593fc', '#0b1220', '#2d4468', '#f2f4f6', '#1e3a63', '#f2f4f6', '#ff6b78', '#ffc233'),
   },
   {
     id: 'public', name: '공공 신뢰', desc: '정부 서비스처럼 차분한 파랑과 또렷한 글씨',
@@ -47,7 +47,7 @@ const THEMES = [
     id: 'control', name: '다크 데이터 관제실', desc: '어두운 바탕에 청록 포인트, 표와 숫자 느낌',
     rs: 0.3, font: SANS, elev: 'flat', box: 'flat', bw: 1, on: '#04120f',
     dc: ['#19c3a6', '#4aa8ff', '#ffb020', '#b48cff', '#ff6f91', '#7be0ff', '#a6e22e', '#ff9f5a'],
-    light: palette('#eef3f6', '#ffffff', '#0f1c26', '#5c7385', '#0f9d86', '#ffffff', '#b5c8d4', '#0f1c26', '#d6e6ee', '#0f1c26', '#d63a5a', '#d98a00'),
+    light: palette('#eef3f6', '#ffffff', '#0f1c26', '#5c7385', '#0b8a75', '#ffffff', '#b5c8d4', '#0f1c26', '#d6e6ee', '#0f1c26', '#d63a5a', '#d98a00'),
     dark: palette('#0a0f14', '#121a22', '#d6e4ee', '#6f8596', '#19c3a6', '#04120f', '#24465a', '#d6e4ee', '#17303d', '#d6e4ee', '#ff5c7a', '#ffb020'),
   },
   {
@@ -94,13 +94,13 @@ const THEMES = [
     rs: 0.6, font: SANS, elev: 'soft', box: 'soft', bw: 1, on: '#150d24',
     dc: ['#ff7be9', '#7bf0ff', '#fff27b', '#a9ff7b', '#c19bff', '#ffb27b', '#7bffd0', '#ff7b9c'],
     light: palette('#f7f0ff', '#ffffff', '#2a1148', '#7c5ea8', '#d900b0', '#ffffff', '#00b8d4', '#06222a', '#ead6ff', '#2a1148', '#e0204a', '#e6b800'),
-    dark: palette('#0b0713', '#150d24', '#f6eaff', '#9d86c4', '#ff2bd6', '#ffffff', '#00e5ff', '#06222a', '#3a1a5c', '#f6eaff', '#ff4d6d', '#ffe600'),
+    dark: palette('#0b0713', '#150d24', '#f6eaff', '#9d86c4', '#ff2bd6', '#150d24', '#00e5ff', '#06222a', '#3a1a5c', '#f6eaff', '#ff4d6d', '#ffe600'),
   },
   {
     id: 'sand', name: '웜 샌드', desc: '모래빛 바탕과 테라코타 포인트',
     rs: 1, font: SANS, elev: 'soft', box: 'soft', bw: 0, on: '#3b2f26',
     dc: ['#f3d2b8', '#e6dcb0', '#d7e0c4', '#f0c4b4', '#dcc9e0', '#c9dbe0', '#f1e0a8', '#e8c6a8'],
-    light: palette('#f6efe6', '#fffaf2', '#3b2f26', '#9a8878', '#c8794a', '#ffffff', '#e3cfb6', '#3b2f26', '#f1dcc0', '#3b2f26', '#b5412f', '#d9961a'),
+    light: palette('#f6efe6', '#fffaf2', '#3b2f26', '#9a8878', '#b5663a', '#ffffff', '#e3cfb6', '#3b2f26', '#f1dcc0', '#3b2f26', '#b5412f', '#d9961a'),
     dark: palette('#1d1712', '#2a221b', '#f2e6d6', '#b09c86', '#e29a6b', '#1d1712', '#5c4a39', '#f2e6d6', '#44352a', '#f2e6d6', '#f0907c', '#e0a93a'),
   },
   {
