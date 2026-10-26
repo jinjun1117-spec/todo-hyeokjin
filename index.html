@@ -9,20 +9,26 @@
 <body>
   <h1>할 일 목록</h1>
 
-  <div>
-    <input type="text" id="todo-input" placeholder="할 일을 적어 보세요">
+  <div id="add-box">
+    <input type="text" id="todo-input" placeholder="할 일을 적어 보세요" maxlength="100" autocomplete="off">
     <button type="button" id="add-button">추가</button>
   </div>
 
-  <ul id="todo-list">
-    <!-- 할 일 한 줄의 모습 (예시) -->
-    <li>
-      <input type="checkbox">
-      <span>예시 할 일</span>
-      <button type="button">삭제</button>
-    </li>
-  </ul>
+  <div id="filters">
+    <button type="button" data-filter="all" aria-pressed="true">전체</button>
+    <button type="button" data-filter="active" aria-pressed="false">진행 중</button>
+    <button type="button" data-filter="done" aria-pressed="false">완료</button>
+  </div>
+
+  <ul id="todo-list"></ul>
 
   <p id="empty-message">아직 할 일이 없어요</p>
+
+  <div id="footer" hidden>
+    <span id="count">남은 할 일 0개</span>
+    <button type="button" id="clear-done">완료한 것 지우기</button>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
