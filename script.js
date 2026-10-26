@@ -744,6 +744,55 @@ function toggleSamples() {
   }
 }
 
+/* 초기화: 표의 모든 할 일·설정과 이 브라우저에 복사해 둔 것을 지워 처음 모습으로 되돌린다 */
+function storeRemove(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    // 막힌 브라우저에서는 건너뛴다
+  }
+}
+
+function askReset() {
+  askConfirm(
+    '정말 초기화할까요? 모든 할 일 ' + todos.length + '개와 이름·테마 설정이 지워지고 되돌릴 수 없어요.',
+    doReset,
+    '초기화'
+  );
+}
+
+async function doReset() {
+  // 먼저 표에서 지운다. 실패하면 아무것도 바꾸지 않고 이유를 알려 준다
+  Object.keys(settingTimers).forEach(function (key) { clearTimeout(settingTimers[key]); });
+  try {
+    await settled(todos);
+    await db('DELETE', 'todos?id=not.is.null');
+    try {
+      await db('DELETE', 'settings?key=not.is.null');
+    } catch (error) {
+      if (!isMissingTable(error)) throw error;
+    }
+  } catch (error) {
+    notify('초기화하지 못했어요: ' + describeError(error));
+    return;
+  }
+  todos = [];
+  userName = '';
+  skinId = DEFAULT_SKIN;
+  [CACHE_KEY, LEGACY_KEY, NAME_KEY, SKIN_KEY, THEME_KEY].forEach(storeRemove);
+  storeSet(IMPORTED_KEY, '1');
+  viewDate = todayString();
+  filter = 'all';
+  query = '';
+  searchInput.value = '';
+  nameInput.value = '';
+  foldChoices.clear();
+  applyTheme(readTheme());
+  save();
+  render();
+  notify('초기화했어요');
+}
+
 /* 지운 할 일은 원래 자리(순서)와 함께 기억해 둔다 */
 function removeTodos(shouldRemove, makePrefix) {
   const removed = [];
@@ -787,8 +836,9 @@ function clearDone() {
 
 let confirmAction = null;
 
-function askConfirm(message, onOk) {
+function askConfirm(message, onOk, okLabel) {
   byId('confirm-text').textContent = message;
+  byId('confirm-ok').textContent = okLabel || '삭제';
   confirmAction = onOk;
   byId('confirm-dialog').showModal();
 }
@@ -1463,7 +1513,9 @@ function renderDaysTab() {
       toggle.setAttribute('aria-expanded', String(!folded));
       const fold = document.createElement('span');
       fold.className = 'fold-label';
-      fold.textContent = folded ? '펴기' : '접기';
+      // 접혀 있으면 오른쪽(▶), 펼쳐져 있으면 아래(▼)로 향한 삼각형. 글자 대신 이름표로 알려 준다
+      fold.textContent = folded ? '▶' : '▼';
+      toggle.setAttribute('aria-label', dateText(due) + (folded ? ' 펴기' : ' 접기'));
       toggle.append(fold);
     }
     head.append(toggle);
@@ -1804,6 +1856,7 @@ byId('cal-stats-toggle').addEventListener('click', function () {
   statsOpen = !statsOpen;
   render();
 });
+byId('reset-button').addEventListener('click', askReset);
 byId('popup-close').addEventListener('click', function () { popup.close(); });
 popupOpen.addEventListener('click', function () {
   const due = popupDate;

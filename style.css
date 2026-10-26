@@ -789,9 +789,10 @@ dialog textarea {
 }
 
 /* 테스트 할 일 버튼 */
-#sample-button {
+#sample-button,
+#reset-button {
   width: 100%;
-  margin-top: 28px;
+  margin-top: 14px;
   background: transparent;
   border: 2px dashed var(--lavender);
   color: var(--gray);
@@ -1489,4 +1490,39 @@ li .memo {
 #jump-dialog #jump-ok:disabled {
   opacity: 0.45;
   cursor: default;
+}
+
+/* 옵션 맨 아래 초기화하기 */
+#reset-button {
+  margin-top: 36px;
+  background: var(--rose-soft);
+  border: 2px solid var(--rose);
+  color: var(--rose);
+}
+
+/* 안내 상자: 되돌리기 버튼이 있든 없든 같은 크기 */
+#toast {
+  min-height: 64px;
+}
+
+/* 접기·펴기 삼각형 */
+.day-head .fold-label {
+  padding-left: 6px;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+/* 자리가 모자라 잘리는 글자는 끝에 …를 붙인다 */
+#cal-grid .chip,
+.preview .pv-input,
+.day-head .title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-head .title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
 }
