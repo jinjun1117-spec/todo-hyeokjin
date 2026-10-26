@@ -856,13 +856,13 @@ dialog textarea {
   font-size: 18px;
 }
 
-#picker-grid {
+:is(#picker-grid, #jump-grid) {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
 }
 
-#picker-grid .weekday {
+:is(#picker-grid, #jump-grid) .weekday {
   padding: 4px 0;
   color: var(--gray);
   font-size: 12px;
@@ -870,12 +870,12 @@ dialog textarea {
   text-align: center;
 }
 
-#picker-grid .weekday.sun,
-#picker-grid .pick-day.sun {
+:is(#picker-grid, #jump-grid) .weekday.sun,
+:is(#picker-grid, #jump-grid) .pick-day.sun {
   color: var(--rose);
 }
 
-#picker-grid .pick-day {
+:is(#picker-grid, #jump-grid) .pick-day {
   min-height: 38px;
   padding: 0;
   background: transparent;
@@ -885,11 +885,11 @@ dialog textarea {
   font-weight: 700;
 }
 
-#picker-grid .pick-day.today {
+:is(#picker-grid, #jump-grid) .pick-day.today {
   box-shadow: inset 0 0 0 2px var(--pink);
 }
 
-#picker-grid .pick-day.current {
+:is(#picker-grid, #jump-grid) .pick-day.current {
   background: var(--lavender);
   color: var(--on-a2);
 }
@@ -1264,7 +1264,35 @@ li,
   font-size: 13px;
 }
 
-#picker-grid .pick-day.chosen {
+:is(#picker-grid, #jump-grid) .pick-day.chosen {
   background: var(--pink);
   color: var(--on-a1);
+}
+
+/* 할 일 탭의 날짜 누르면 뜨는 달력 창 */
+#day-label {
+  min-height: 44px;
+  background: transparent;
+  border-radius: calc(12px * var(--rs));
+  color: var(--ink);
+  font-weight: 400;
+}
+
+#day-text::after {
+  content: " ▾";
+  color: var(--gray);
+  font-size: 13px;
+}
+
+#jump-dialog .picker-head strong {
+  font-size: 16px;
+}
+
+#jump-dialog .detail-row button {
+  flex: 1;
+}
+
+#day-bar #day-label {
+  flex: 1;
+  min-width: 0;
 }

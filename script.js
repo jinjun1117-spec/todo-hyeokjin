@@ -935,11 +935,8 @@ function setPicker(open) {
   }
 }
 
-function renderPicker() {
-  const todo = findTodo(detailId);
-  const current = todo ? todo.due : '';
-  pickerTitle.textContent = pickerYear + '년 ' + (pickerMonth + 1) + '월';
-
+// 작은 달력의 칸들: 요일 줄 + 그 달의 날짜 단추들(classesFor로 색 표시를, onPick으로 눌렀을 때 일을 정한다)
+function monthCells(year, month, classesFor, onPick, labelOf) {
   const cells = [];
   WEEKDAYS.split('').forEach(function (name, i) {
     const label = document.createElement('span');
@@ -947,22 +944,67 @@ function renderPicker() {
     label.textContent = name;
     cells.push(label);
   });
-  const firstWeekday = new Date(pickerYear, pickerMonth, 1).getDay();
-  const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   for (let i = 0; i < firstWeekday; i++) cells.push(document.createElement('span'));
-  const today = todayString();
   for (let day = 1; day <= daysInMonth; day++) {
-    const due = dueString(pickerYear, pickerMonth, day);
-    const cell = makeButton(String(day), 'pick-day', function () { pickDate(due); });
+    const due = dueString(year, month, day);
+    const cell = makeButton(String(day), 'pick-day', function () { onPick(due); });
     if ((firstWeekday + day - 1) % 7 === 0) cell.classList.add('sun');
-    if (due === today) cell.classList.add('today');
-    if (due === current) cell.classList.add('current');
-    if (due === pendingDue) cell.classList.add('chosen');
+    classesFor(due).forEach(function (name) { cell.classList.add(name); });
     cell.dataset.date = due;
-    cell.setAttribute('aria-label', dateText(due) + '로 정하기');
+    cell.setAttribute('aria-label', labelOf(due));
     cells.push(cell);
   }
-  pickerGrid.replaceChildren(...cells);
+  return cells;
+}
+
+function renderPicker() {
+  const todo = findTodo(detailId);
+  const current = todo ? todo.due : '';
+  const today = todayString();
+  pickerTitle.textContent = pickerYear + '년 ' + (pickerMonth + 1) + '월';
+  pickerGrid.replaceChildren(...monthCells(pickerYear, pickerMonth, function (due) {
+    const names = [];
+    if (due === today) names.push('today');
+    if (due === current) names.push('current');
+    if (due === pendingDue) names.push('chosen');
+    return names;
+  }, pickDate, function (due) { return dateText(due) + '로 정하기'; }));
+}
+
+/* 할 일 탭의 날짜를 누르면 뜨는 달력 창: 날짜를 누르면 바로 그 날짜의 목록으로 간다 */
+let jumpYear = 0;
+let jumpMonth = 0;
+
+function openJump() {
+  const p = parseDue(viewDate);
+  jumpYear = p.year;
+  jumpMonth = p.month - 1;
+  renderJump();
+  byId('jump-dialog').showModal();
+}
+
+function renderJump() {
+  const today = todayString();
+  byId('jump-title').textContent = jumpYear + '년 ' + (jumpMonth + 1) + '월';
+  byId('jump-grid').replaceChildren(...monthCells(jumpYear, jumpMonth, function (due) {
+    const names = [];
+    if (due === today) names.push('today');
+    if (due === viewDate) names.push('current');
+    return names;
+  }, function (due) {
+    byId('jump-dialog').close();
+    viewDate = due;
+    render();
+  }, function (due) { return dateText(due) + ' 목록 보기'; }));
+}
+
+function moveJump(step) {
+  const moved = new Date(jumpYear, jumpMonth + step, 1);
+  jumpYear = moved.getFullYear();
+  jumpMonth = moved.getMonth();
+  renderJump();
 }
 
 // 달력에서 날짜를 누르면 옮길 날짜로 정하고 달력을 접는다(지금 날짜를 누르면 정한 것이 없어진다)
@@ -1711,6 +1753,13 @@ detailDone.addEventListener('click', function () {
 byId('detail-tomorrow').addEventListener('click', postponeToTomorrow);
 detailPick.addEventListener('click', function () { setPicker(detailPicker.hidden); });
 byId('detail-pending-clear').addEventListener('click', function () { setPending(null, ''); });
+byId('day-label').addEventListener('click', openJump);
+byId('jump-prev').addEventListener('click', function () { moveJump(-1); });
+byId('jump-next').addEventListener('click', function () { moveJump(1); });
+byId('jump-close').addEventListener('click', function () { byId('jump-dialog').close(); });
+byId('jump-dialog').addEventListener('click', function (e) {
+  if (e.target === byId('jump-dialog')) byId('jump-dialog').close();
+});
 byId('picker-prev').addEventListener('click', function () { movePicker(-1); });
 byId('picker-next').addEventListener('click', function () { movePicker(1); });
 byId('detail-save').addEventListener('click', saveDetail);
