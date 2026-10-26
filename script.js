@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'todos';
+const THEME_KEY = 'theme';
+const UNDO_MILLISECONDS = 5000;
 
 const input = document.getElementById('todo-input');
 const addButton = document.getElementById('add-button');
@@ -10,6 +12,11 @@ const progress = document.getElementById('progress');
 const progressText = document.getElementById('progress-text');
 const progressFill = document.getElementById('progress-fill');
 const filterButtons = document.querySelectorAll('#filters button');
+const todayText = document.getElementById('today');
+const themeButton = document.getElementById('theme-button');
+const toast = document.getElementById('toast');
+const toastText = document.getElementById('toast-text');
+const undoButton = document.getElementById('undo-button');
 const list = document.getElementById('todo-list');
 const emptyMessage = document.getElementById('empty-message');
 const footer = document.getElementById('footer');
@@ -28,6 +35,8 @@ let query = '';
 let sortBy = 'added';
 let newImportant = false;
 let editingId = null;
+let removed = [];
+let toastTimer = null;
 
 function load() {
   try {
@@ -124,17 +133,77 @@ function toggleImportant(id) {
   }
 }
 
+/* 지운 할 일은 원래 자리(순서)와 함께 기억해 둔다 */
+function removeTodos(shouldRemove, message) {
+  removed = [];
+  todos.forEach(function (t, index) {
+    if (shouldRemove(t)) removed.push({ todo: t, index: index });
+  });
+  todos = todos.filter(function (t) { return !shouldRemove(t); });
+  if (!findTodo(editingId)) editingId = null;
+  save();
+  render();
+  showToast(message);
+}
+
 function deleteTodo(id) {
-  todos = todos.filter(function (t) { return t.id !== id; });
-  if (editingId === id) editingId = null;
+  removeTodos(function (t) { return t.id === id; }, '삭제했어요');
+}
+
+function clearDone() {
+  const doneCount = todos.filter(function (t) { return t.done; }).length;
+  removeTodos(function (t) { return t.done; }, doneCount + '개 지웠어요');
+}
+
+function undoRemove() {
+  removed.forEach(function (r) {
+    todos.splice(Math.min(r.index, todos.length), 0, r.todo);
+  });
+  removed = [];
+  hideToast();
   save();
   render();
 }
 
-function clearDone() {
-  todos = todos.filter(function (t) { return !t.done; });
-  save();
-  render();
+function showToast(message) {
+  toastText.textContent = message;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, UNDO_MILLISECONDS);
+}
+
+function hideToast() {
+  clearTimeout(toastTimer);
+  toast.hidden = true;
+  removed = [];
+}
+
+/* 다크 모드: 저장된 선택이 없으면 기기 설정을 따른다 */
+function readTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark' || saved === 'light') return saved;
+  } catch (e) {
+    // 읽기가 막혀도 기기 설정으로 넘어간다
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const dark = theme === 'dark';
+  themeButton.textContent = dark ? '☀️' : '🌙';
+  themeButton.setAttribute('aria-label', dark ? '밝은 모드로 바꾸기' : '다크 모드로 바꾸기');
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try {
+    localStorage.setItem(THEME_KEY, next);
+  } catch (e) {
+    // 저장이 막혀도 이번 화면에서는 바뀐다
+  }
 }
 
 function startEdit(id) {
@@ -299,6 +368,8 @@ function render() {
   });
 }
 
+undoButton.addEventListener('click', undoRemove);
+themeButton.addEventListener('click', toggleTheme);
 addButton.addEventListener('click', addTodo);
 input.addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && !e.isComposing) addTodo();
@@ -320,4 +391,6 @@ filterButtons.forEach(function (b) {
 });
 clearButton.addEventListener('click', clearDone);
 
+todayText.textContent = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
+applyTheme(readTheme());
 render();
