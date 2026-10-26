@@ -1,27 +1,50 @@
 const STORAGE_KEY = 'todos';
 const THEME_KEY = 'theme';
 const UNDO_MILLISECONDS = 5000;
+const WEEKDAYS = '일월화수목금토';
+// 같은 날짜는 언제나 같은 색이 되도록, 날짜 번호를 색 개수로 나눈 나머지로 고른다
+const DATE_COLORS = ['#ffb3d1', '#c9b8ff', '#b8f0d8', '#ffe49a', '#a8d8ff', '#ffc9a8', '#d4f0a0', '#ffb3b3'];
 
-const input = document.getElementById('todo-input');
-const addButton = document.getElementById('add-button');
-const dueInput = document.getElementById('due-input');
-const importantToggle = document.getElementById('important-toggle');
-const searchInput = document.getElementById('search-input');
-const sortSelect = document.getElementById('sort-select');
-const progress = document.getElementById('progress');
-const progressText = document.getElementById('progress-text');
-const progressFill = document.getElementById('progress-fill');
+function byId(id) {
+  return document.getElementById(id);
+}
+
+const input = byId('todo-input');
+const addButton = byId('add-button');
+const dueInput = byId('due-input');
+const importantToggle = byId('important-toggle');
+const searchInput = byId('search-input');
+const sortSelect = byId('sort-select');
+const progress = byId('progress');
+const progressText = byId('progress-text');
+const progressFill = byId('progress-fill');
 const filterButtons = document.querySelectorAll('#filters button');
-const todayText = document.getElementById('today');
-const themeButton = document.getElementById('theme-button');
-const toast = document.getElementById('toast');
-const toastText = document.getElementById('toast-text');
-const undoButton = document.getElementById('undo-button');
-const list = document.getElementById('todo-list');
-const emptyMessage = document.getElementById('empty-message');
-const footer = document.getElementById('footer');
-const count = document.getElementById('count');
-const clearButton = document.getElementById('clear-done');
+const list = byId('todo-list');
+const emptyMessage = byId('empty-message');
+const footer = byId('footer');
+const count = byId('count');
+const clearButton = byId('clear-done');
+const importantList = byId('important-list');
+const importantEmpty = byId('important-empty');
+const ddayList = byId('dday-list');
+const ddayEmpty = byId('dday-empty');
+const todayText = byId('today');
+const themeButton = byId('theme-button');
+const toast = byId('toast');
+const toastText = byId('toast-text');
+const undoButton = byId('undo-button');
+const tabButtons = document.querySelectorAll('#tabbar button');
+const panels = {
+  todo: byId('tab-todo'),
+  important: byId('tab-important'),
+  dday: byId('tab-dday'),
+};
+const detail = byId('detail');
+const detailTitle = byId('detail-title');
+const detailMemo = byId('detail-memo');
+const detailDue = byId('detail-due');
+const detailImportant = byId('detail-important');
+const detailDone = byId('detail-done');
 
 const EMPTY_TEXT = {
   all: '아직 할 일이 없어요',
@@ -30,13 +53,14 @@ const EMPTY_TEXT = {
 };
 
 let todos = load();
+let activeTab = 'todo';
 let filter = 'all';
 let query = '';
-let sortBy = 'added';
+let sortBy = 'due';
 let newImportant = false;
-let editingId = null;
 let removed = [];
 let toastTimer = null;
+let detailId = null;
 
 function load() {
   try {
@@ -51,6 +75,7 @@ function load() {
           done: !!t.done,
           important: !!t.important,
           due: typeof t.due === 'string' ? t.due : '',
+          memo: typeof t.memo === 'string' ? t.memo : '',
         };
       });
   } catch (e) {
@@ -70,24 +95,45 @@ function findTodo(id) {
   return todos.find(function (t) { return t.id === id; });
 }
 
-/* 마감일: 오늘과 며칠 차이인지 계산해서 짧은 글로 바꾼다 */
-function dayDiff(due) {
+/* 날짜: 마감일 글자('2026-10-29')를 보기 좋은 글과 색으로 바꾼다 */
+function parseDue(due) {
   const parts = due.split('-').map(Number);
+  return { year: parts[0], month: parts[1], day: parts[2] };
+}
+
+function dayDiff(due) {
+  const p = parseDue(due);
   const now = new Date();
-  const target = new Date(parts[0], parts[1] - 1, parts[2]);
+  const target = new Date(p.year, p.month - 1, p.day);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((target - today) / 86400000);
 }
 
-function dueLabel(due) {
-  const diff = dayDiff(due);
-  if (diff === 0) return { text: '오늘', cls: 'today' };
-  if (diff === 1) return { text: '내일', cls: 'soon' };
-  if (diff < 0) return { text: Math.abs(diff) + '일 지남', cls: 'late' };
-  const parts = due.split('-').map(Number);
-  return { text: parts[1] + '월 ' + parts[2] + '일', cls: '' };
+function dateText(due) {
+  const p = parseDue(due);
+  return p.month + '월 ' + p.day + '일 (' + WEEKDAYS[new Date(p.year, p.month - 1, p.day).getDay()] + ')';
 }
 
+function ddayText(due) {
+  const diff = dayDiff(due);
+  if (diff === 0) return 'D-DAY';
+  return diff > 0 ? 'D-' + diff : 'D+' + Math.abs(diff);
+}
+
+function dateColor(due) {
+  const p = parseDue(due);
+  const dayNumber = Math.floor(Date.UTC(p.year, p.month - 1, p.day) / 86400000);
+  return DATE_COLORS[dayNumber % DATE_COLORS.length];
+}
+
+function compareByDue(a, b) {
+  if (!a.due && !b.due) return 0;
+  if (!a.due) return 1;
+  if (!b.due) return -1;
+  return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+}
+
+/* 할 일 바꾸기 */
 function addTodo() {
   const text = input.value.trim();
   if (!text) {
@@ -100,6 +146,7 @@ function addTodo() {
     done: false,
     important: newImportant,
     due: dueInput.value,
+    memo: '',
   });
   input.value = '';
   dueInput.value = '';
@@ -140,7 +187,6 @@ function removeTodos(shouldRemove, message) {
     if (shouldRemove(t)) removed.push({ todo: t, index: index });
   });
   todos = todos.filter(function (t) { return !shouldRemove(t); });
-  if (!findTodo(editingId)) editingId = null;
   save();
   render();
   showToast(message);
@@ -178,6 +224,206 @@ function hideToast() {
   removed = [];
 }
 
+/* 상세 창 */
+function setDetailToggle(button, on, onText, offText) {
+  button.setAttribute('aria-pressed', String(on));
+  button.textContent = on ? onText : offText;
+}
+
+function setDetailImportant(on) {
+  setDetailToggle(detailImportant, on, '★ 중요', '☆ 중요');
+}
+
+function setDetailDone(on) {
+  setDetailToggle(detailDone, on, '☑ 완료', '☐ 완료');
+}
+
+function openDetail(id) {
+  const todo = findTodo(id);
+  if (!todo) return;
+  detailId = id;
+  detailTitle.value = todo.text;
+  detailMemo.value = todo.memo;
+  detailDue.value = todo.due;
+  setDetailImportant(todo.important);
+  setDetailDone(todo.done);
+  detail.showModal();
+}
+
+function saveDetail() {
+  const todo = findTodo(detailId);
+  const title = detailTitle.value.trim();
+  if (!todo) {
+    detail.close();
+    return;
+  }
+  if (!title) {
+    detailTitle.focus();
+    return;
+  }
+  todo.text = title;
+  todo.memo = detailMemo.value.trim();
+  todo.due = detailDue.value;
+  todo.important = detailImportant.getAttribute('aria-pressed') === 'true';
+  todo.done = detailDone.getAttribute('aria-pressed') === 'true';
+  detail.close();
+  save();
+  render();
+}
+
+function deleteFromDetail() {
+  const id = detailId;
+  detail.close();
+  deleteTodo(id);
+}
+
+/* 화면 그리기 */
+function makeButton(label, className, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.textContent = label;
+  button.addEventListener('click', onClick);
+  return button;
+}
+
+function makeDueBadge(todo) {
+  const due = document.createElement('span');
+  due.className = 'due' + (dayDiff(todo.due) < 0 && !todo.done ? ' late' : '');
+  due.textContent = dateText(todo.due) + ' · ' + ddayText(todo.due);
+  return due;
+}
+
+function makeItem(todo) {
+  const li = document.createElement('li');
+  if (todo.done) li.classList.add('done');
+  if (todo.due) li.style.setProperty('--date-color', dateColor(todo.due));
+
+  const check = document.createElement('input');
+  check.type = 'checkbox';
+  check.checked = todo.done;
+  check.setAttribute('aria-label', '완료: ' + todo.text);
+  check.addEventListener('change', function () { toggleDone(todo.id); });
+
+  const main = makeButton('', 'main', function () { openDetail(todo.id); });
+  main.setAttribute('aria-label', '상세 보기: ' + todo.text);
+  const text = document.createElement('span');
+  text.className = 'text';
+  text.textContent = todo.text;
+  main.append(text);
+  if (todo.memo) {
+    const memo = document.createElement('span');
+    memo.className = 'memo';
+    memo.textContent = todo.memo.split('\n')[0];
+    main.append(memo);
+  }
+  if (todo.due) main.append(makeDueBadge(todo));
+
+  const star = makeButton(todo.important ? '★' : '☆', 'star', function () { toggleImportant(todo.id); });
+  star.setAttribute('aria-pressed', String(todo.important));
+  star.setAttribute('aria-label', '중요: ' + todo.text);
+
+  const del = makeButton('삭제', 'delete', function () { deleteTodo(todo.id); });
+  del.setAttribute('aria-label', '삭제: ' + todo.text);
+
+  li.append(check, main, star, del);
+  return li;
+}
+
+function makeDdayCard(todo) {
+  const card = makeButton('', 'dday-card', function () { openDetail(todo.id); });
+  card.style.setProperty('--date-color', dateColor(todo.due));
+  if (dayDiff(todo.due) < 0) card.classList.add('late');
+  card.setAttribute('aria-label', '상세 보기: ' + todo.text);
+
+  const big = document.createElement('span');
+  big.className = 'big';
+  big.textContent = ddayText(todo.due);
+
+  const info = document.createElement('span');
+  info.className = 'info';
+  const title = document.createElement('span');
+  title.className = 'title';
+  title.textContent = todo.text;
+  const date = document.createElement('span');
+  date.className = 'date';
+  date.textContent = dateText(todo.due);
+  info.append(title, date);
+
+  card.append(big, info);
+  return card;
+}
+
+function sortTodos(items) {
+  const sorted = items.slice();
+  if (sortBy === 'due') {
+    sorted.sort(compareByDue);
+  } else if (sortBy === 'important') {
+    sorted.sort(function (a, b) { return Number(b.important) - Number(a.important); });
+  }
+  return sorted;
+}
+
+function renderTodoTab() {
+  const word = query.trim().toLowerCase();
+  const shown = sortTodos(todos.filter(function (t) {
+    if (filter === 'active' && t.done) return false;
+    if (filter === 'done' && !t.done) return false;
+    return !word || t.text.toLowerCase().includes(word);
+  }));
+
+  list.replaceChildren(...shown.map(makeItem));
+
+  emptyMessage.textContent = word && todos.length > 0 ? '검색 결과가 없어요' : EMPTY_TEXT[filter];
+  emptyMessage.hidden = shown.length > 0;
+
+  const remaining = todos.filter(function (t) { return !t.done; }).length;
+  const finished = todos.length - remaining;
+  progress.hidden = todos.length === 0;
+  progressText.textContent = todos.length > 0 && remaining === 0
+    ? '모두 끝냈어요! 🎉'
+    : finished + ' / ' + todos.length + ' 완료';
+  progressFill.style.width = (todos.length ? Math.round(finished / todos.length * 100) : 0) + '%';
+
+  count.textContent = '남은 할 일 ' + remaining + '개';
+  clearButton.disabled = remaining === todos.length;
+  footer.hidden = todos.length === 0;
+
+  filterButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.filter === filter));
+  });
+}
+
+function renderImportantTab() {
+  const items = todos.filter(function (t) { return t.important; }).sort(compareByDue);
+  importantList.replaceChildren(...items.map(makeItem));
+  importantEmpty.hidden = items.length > 0;
+}
+
+function renderDdayTab() {
+  const items = todos.filter(function (t) { return t.due && !t.done; }).sort(compareByDue);
+  ddayList.replaceChildren(...items.map(makeDdayCard));
+  ddayEmpty.hidden = items.length > 0;
+}
+
+function render() {
+  renderTodoTab();
+  renderImportantTab();
+  renderDdayTab();
+
+  Object.keys(panels).forEach(function (name) {
+    panels[name].hidden = name !== activeTab;
+  });
+  tabButtons.forEach(function (b) {
+    b.setAttribute('aria-selected', String(b.dataset.tab === activeTab));
+  });
+}
+
+function switchTab(name) {
+  activeTab = name;
+  render();
+}
+
 /* 다크 모드: 저장된 선택이 없으면 기기 설정을 따른다 */
 function readTheme() {
   try {
@@ -206,168 +452,7 @@ function toggleTheme() {
   }
 }
 
-function startEdit(id) {
-  editingId = id;
-  render();
-}
-
-function cancelEdit() {
-  editingId = null;
-  render();
-}
-
-function saveEdit(id, text, due) {
-  const trimmed = text.trim();
-  const todo = findTodo(id);
-  if (!todo) return;
-  if (!trimmed) {
-    list.querySelector('li.editing input[type="text"]').focus();
-    return;
-  }
-  todo.text = trimmed;
-  todo.due = due;
-  editingId = null;
-  save();
-  render();
-}
-
-function makeButton(label, className, onClick) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = className;
-  button.textContent = label;
-  button.addEventListener('click', onClick);
-  return button;
-}
-
-function makeItem(todo) {
-  const li = document.createElement('li');
-  if (todo.done) li.classList.add('done');
-  if (todo.important) li.classList.add('important');
-
-  const check = document.createElement('input');
-  check.type = 'checkbox';
-  check.checked = todo.done;
-  check.setAttribute('aria-label', '완료: ' + todo.text);
-  check.addEventListener('change', function () { toggleDone(todo.id); });
-
-  const main = document.createElement('div');
-  main.className = 'main';
-  const text = document.createElement('span');
-  text.className = 'text';
-  text.textContent = todo.text;
-  main.append(text);
-  if (todo.due) {
-    const info = dueLabel(todo.due);
-    const due = document.createElement('span');
-    due.className = 'due' + (info.cls && !todo.done ? ' ' + info.cls : '');
-    due.textContent = info.text;
-    main.append(due);
-  }
-
-  const star = makeButton(todo.important ? '★' : '☆', 'star', function () { toggleImportant(todo.id); });
-  star.setAttribute('aria-pressed', String(todo.important));
-  star.setAttribute('aria-label', '중요: ' + todo.text);
-
-  const edit = makeButton('수정', 'edit', function () { startEdit(todo.id); });
-  edit.setAttribute('aria-label', '수정: ' + todo.text);
-  const del = makeButton('삭제', 'delete', function () { deleteTodo(todo.id); });
-  del.setAttribute('aria-label', '삭제: ' + todo.text);
-
-  li.append(check, main, star, edit, del);
-  return li;
-}
-
-function makeEditItem(todo) {
-  const li = document.createElement('li');
-  li.className = 'editing';
-
-  const textField = document.createElement('input');
-  textField.type = 'text';
-  textField.value = todo.text;
-  textField.maxLength = 100;
-  textField.setAttribute('aria-label', '할 일 글');
-
-  const dueField = document.createElement('input');
-  dueField.type = 'date';
-  dueField.value = todo.due;
-  dueField.setAttribute('aria-label', '마감일');
-
-  function submit() { saveEdit(todo.id, textField.value, dueField.value); }
-  function onKey(e) {
-    if (e.key === 'Enter' && !e.isComposing) submit();
-    if (e.key === 'Escape') cancelEdit();
-  }
-  textField.addEventListener('keydown', onKey);
-  dueField.addEventListener('keydown', onKey);
-
-  const fields = document.createElement('div');
-  fields.className = 'edit-row';
-  fields.append(textField);
-  const dates = document.createElement('div');
-  dates.className = 'edit-row';
-  dates.append(dueField);
-  const buttons = document.createElement('div');
-  buttons.className = 'edit-row';
-  buttons.append(makeButton('저장', 'save', submit), makeButton('취소', 'cancel', cancelEdit));
-  dates.append(buttons);
-
-  li.append(fields, dates);
-  return li;
-}
-
-function sortTodos(items) {
-  const sorted = items.slice();
-  if (sortBy === 'due') {
-    sorted.sort(function (a, b) {
-      if (!a.due && !b.due) return 0;
-      if (!a.due) return 1;
-      if (!b.due) return -1;
-      return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
-    });
-  } else if (sortBy === 'important') {
-    sorted.sort(function (a, b) { return Number(b.important) - Number(a.important); });
-  }
-  return sorted;
-}
-
-function render() {
-  const word = query.trim().toLowerCase();
-  const shown = sortTodos(todos.filter(function (t) {
-    if (filter === 'active' && t.done) return false;
-    if (filter === 'done' && !t.done) return false;
-    return !word || t.text.toLowerCase().includes(word);
-  }));
-
-  list.replaceChildren(...shown.map(function (t) {
-    return t.id === editingId ? makeEditItem(t) : makeItem(t);
-  }));
-
-  const editField = list.querySelector('li.editing input[type="text"]');
-  if (editField) {
-    editField.focus();
-    editField.setSelectionRange(editField.value.length, editField.value.length);
-  }
-
-  emptyMessage.textContent = word && todos.length > 0 ? '검색 결과가 없어요' : EMPTY_TEXT[filter];
-  emptyMessage.hidden = shown.length > 0;
-
-  const remaining = todos.filter(function (t) { return !t.done; }).length;
-  const finished = todos.length - remaining;
-  progress.hidden = todos.length === 0;
-  progressText.textContent = todos.length > 0 && remaining === 0
-    ? '모두 끝냈어요! 🎉'
-    : finished + ' / ' + todos.length + ' 완료';
-  progressFill.style.width = (todos.length ? Math.round(finished / todos.length * 100) : 0) + '%';
-  count.textContent = '남은 할 일 ' + remaining + '개';
-  clearButton.disabled = remaining === todos.length;
-  footer.hidden = todos.length === 0;
-
-  filterButtons.forEach(function (b) {
-    b.setAttribute('aria-pressed', String(b.dataset.filter === filter));
-  });
-}
-
+/* 버튼과 칸에 동작 달기 */
 undoButton.addEventListener('click', undoRemove);
 themeButton.addEventListener('click', toggleTheme);
 addButton.addEventListener('click', addTodo);
@@ -390,6 +475,27 @@ filterButtons.forEach(function (b) {
   });
 });
 clearButton.addEventListener('click', clearDone);
+tabButtons.forEach(function (b) {
+  b.addEventListener('click', function () { switchTab(b.dataset.tab); });
+});
+
+detailImportant.addEventListener('click', function () {
+  setDetailImportant(detailImportant.getAttribute('aria-pressed') !== 'true');
+});
+detailDone.addEventListener('click', function () {
+  setDetailDone(detailDone.getAttribute('aria-pressed') !== 'true');
+});
+byId('detail-clear-due').addEventListener('click', function () { detailDue.value = ''; });
+byId('detail-save').addEventListener('click', saveDetail);
+byId('detail-cancel').addEventListener('click', function () { detail.close(); });
+byId('detail-delete').addEventListener('click', deleteFromDetail);
+detailTitle.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.isComposing) saveDetail();
+});
+detail.addEventListener('click', function (e) {
+  if (e.target === detail) detail.close();
+});
+detail.addEventListener('close', function () { detailId = null; });
 
 todayText.textContent = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
 applyTheme(readTheme());

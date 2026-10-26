@@ -42,7 +42,7 @@
 
 body {
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: 24px 16px 110px;
   max-width: 480px;
   background: var(--bg);
   color: var(--ink);
@@ -84,6 +84,17 @@ h1 {
   letter-spacing: -0.02em;
   background: linear-gradient(transparent 55%, var(--yellow) 55%);
   color: #2d2a45;
+}
+
+:root[data-theme="dark"] h1 {
+  background: linear-gradient(transparent 55%, rgba(255, 228, 154, 0.35) 55%);
+  color: var(--ink);
+}
+
+h2 {
+  margin: 0 4px 12px;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 /* 진행 상황 */
@@ -141,7 +152,8 @@ h1 {
 }
 
 input[type="text"],
-input[type="date"] {
+input[type="date"],
+textarea {
   flex: 1;
   min-width: 0;
   min-height: 48px;
@@ -154,12 +166,14 @@ input[type="date"] {
   font-size: 16px;
 }
 
-input[type="text"]::placeholder {
+input[type="text"]::placeholder,
+textarea::placeholder {
   color: var(--gray);
 }
 
 input[type="text"]:focus,
-input[type="date"]:focus {
+input[type="date"]:focus,
+textarea:focus {
   outline: none;
   border-color: var(--lavender);
   background: var(--card);
@@ -261,7 +275,7 @@ select {
   color: #2d2a45;
 }
 
-/* 할 일 목록 */
+/* 할 일 목록 (어느 탭에서나 같은 줄 모양) */
 ul {
   margin: 16px 0 0;
   padding: 0;
@@ -271,30 +285,16 @@ ul {
 li {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
   padding: 6px 6px 6px 14px;
   background: var(--card);
-  border-left: 8px solid var(--mint);
+  border-left: 8px solid var(--date-color, var(--done-line));
   border-radius: 16px;
   box-shadow: 0 3px 12px var(--shadow);
 }
 
-li:nth-child(3n + 2) {
-  border-left-color: var(--yellow);
-}
-
-li:nth-child(3n) {
-  border-left-color: var(--lavender);
-}
-
-li.important,
-li.important:nth-child(n) {
-  border-left-color: var(--pink);
-}
-
-li.done,
-li.done:nth-child(n) {
+li.done {
   border-left-color: var(--done-line);
 }
 
@@ -303,49 +303,6 @@ li input[type="checkbox"] {
   width: 22px;
   height: 22px;
   accent-color: #a78bfa;
-}
-
-li .main {
-  flex: 1;
-  min-width: 0;
-  padding: 4px 0;
-}
-
-li .text {
-  display: block;
-  overflow-wrap: anywhere;
-  font-size: 16px;
-}
-
-li.done .text {
-  color: var(--gray);
-  text-decoration: line-through;
-}
-
-li .due {
-  display: inline-block;
-  margin-top: 2px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--field);
-  color: var(--gray);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-li .due.today {
-  background: var(--yellow);
-  color: #2d2a45;
-}
-
-li .due.soon {
-  background: var(--mint);
-  color: #2d2a45;
-}
-
-li .due.late {
-  background: var(--rose-soft);
-  color: var(--rose);
 }
 
 li button {
@@ -361,6 +318,58 @@ li button {
 li button:hover,
 li button:active {
   background: var(--field);
+}
+
+li button.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 6px;
+  color: var(--ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+li .text {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+li.done .text {
+  color: var(--gray);
+  text-decoration: line-through;
+}
+
+li .memo {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--gray);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.due {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--date-color, var(--field));
+  color: #2d2a45;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.due.late {
+  box-shadow: inset 0 0 0 2px var(--rose);
+}
+
+li.done .due {
+  opacity: 0.55;
 }
 
 li button.star {
@@ -382,29 +391,8 @@ li button.delete:active {
   background: var(--rose-soft-hover);
 }
 
-/* 고치는 중인 줄 */
-li.editing {
-  align-items: stretch;
-  flex-direction: column;
-  padding: 10px;
-}
-
-li.editing .edit-row {
-  display: flex;
-  gap: 8px;
-}
-
-li.editing button.save {
-  background: var(--pink);
-  color: #2d2a45;
-}
-
-li.editing button.cancel {
-  background: var(--field);
-}
-
 /* 비어 있을 때 */
-#empty-message {
+.empty {
   margin: 28px 0 0;
   text-align: center;
   color: var(--gray);
@@ -437,11 +425,176 @@ li.editing button.cancel {
   cursor: default;
 }
 
+/* 디데이 카드 */
+#dday-list {
+  display: grid;
+  gap: 12px;
+}
+
+.dday-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 84px;
+  padding: 14px 18px;
+  background: var(--date-color, var(--field));
+  border-radius: 20px;
+  box-shadow: 0 3px 12px var(--shadow);
+  color: #2d2a45;
+  font-weight: 400;
+  text-align: left;
+}
+
+.dday-card .big {
+  flex: none;
+  min-width: 92px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.dday-card.late .big {
+  color: #c2255c;
+}
+
+.dday-card .info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dday-card .title {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.dday-card .date {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+/* 맨 아래 탭 줄 */
+#tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  width: 100%;
+  max-width: 480px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: var(--card);
+  border-top: 2px solid var(--lavender);
+  box-shadow: 0 -4px 16px var(--shadow);
+}
+
+#tabbar button {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 56px;
+  background: transparent;
+  color: var(--gray);
+  font-size: 12px;
+}
+
+#tabbar button span {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+#tabbar button[aria-selected="true"] {
+  background: var(--lavender);
+  color: #2d2a45;
+}
+
+/* 상세 창 */
+dialog {
+  width: 100%;
+  max-width: 480px;
+  margin: auto auto 0;
+  padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border: none;
+  border-radius: 24px 24px 0 0;
+  color: var(--ink);
+}
+
+dialog::backdrop {
+  background: rgba(45, 42, 69, 0.5);
+}
+
+dialog h2 {
+  margin: 0 0 12px;
+}
+
+dialog label {
+  display: block;
+  margin: 12px 4px 4px;
+  color: var(--gray);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+dialog input[type="text"],
+dialog input[type="date"],
+dialog textarea {
+  width: 100%;
+}
+
+dialog textarea {
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.detail-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.detail-row button {
+  flex: 1;
+  background: var(--field);
+  color: var(--ink);
+}
+
+.detail-row #detail-clear-due {
+  flex: none;
+  padding: 0 12px;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.detail-row button[aria-pressed="true"] {
+  background: var(--yellow);
+  color: #2d2a45;
+}
+
+.detail-actions {
+  margin-top: 16px;
+}
+
+.detail-actions #detail-delete {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+.detail-actions #detail-save {
+  background: var(--pink);
+  color: #2d2a45;
+}
+
 /* 되돌리기 알림 */
 #toast {
   position: fixed;
   left: 50%;
-  bottom: 20px;
+  bottom: 88px;
+  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -462,10 +615,4 @@ li.editing button.cancel {
   padding: 0 16px;
   background: var(--yellow);
   color: #2d2a45;
-}
-
-/* 다크 모드에서 제목 글자와 형광펜 */
-:root[data-theme="dark"] h1 {
-  background: linear-gradient(transparent 55%, rgba(255, 228, 154, 0.35) 55%);
-  color: var(--ink);
 }
