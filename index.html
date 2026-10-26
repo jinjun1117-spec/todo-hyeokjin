@@ -65,11 +65,17 @@
     </section>
 
     <section id="tab-days" role="tabpanel" aria-label="날짜별 목록" hidden>
-      <input type="search" id="search-input" placeholder="할 일 찾기" aria-label="할 일 찾기" autocomplete="off">
-      <div id="range">
-        <button type="button" data-range="upcoming" aria-pressed="true">오늘부터</button>
-        <button type="button" data-range="all" aria-pressed="false">지난 날짜 함께 보기</button>
+      <div id="span-tabs" role="group" aria-label="보는 범위">
+        <button type="button" data-span="week" aria-pressed="true">한주 보기</button>
+        <button type="button" data-span="month" aria-pressed="false">한달 보기</button>
       </div>
+      <div id="span-nav">
+        <button type="button" id="span-prev" aria-label="이전">‹</button>
+        <strong id="span-label"></strong>
+        <button type="button" id="span-next" aria-label="다음">›</button>
+        <button type="button" id="span-today">오늘</button>
+      </div>
+      <input type="search" id="search-input" placeholder="할 일 찾기" aria-label="할 일 찾기" autocomplete="off">
       <div id="days-list"></div>
       <p id="days-empty" class="empty">아직 할 일이 없어요</p>
       <button type="button" id="sample-button">🧪 테스트 할 일 20개 넣기</button>

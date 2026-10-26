@@ -31,7 +31,8 @@ const popupList = byId('popup-list');
 const popupEmpty = byId('popup-empty');
 const popupOpen = byId('popup-open');
 const searchInput = byId('search-input');
-const rangeButtons = document.querySelectorAll('#range button');
+const spanButtons = document.querySelectorAll('#span-tabs button');
+const spanLabel = byId('span-label');
 const sampleButton = byId('sample-button');
 const daysList = byId('days-list');
 const daysEmpty = byId('days-empty');
@@ -99,7 +100,8 @@ let activeTab = 'todo';
 let viewDate = todayString();
 let filter = 'all';
 let query = '';
-let range = 'upcoming';
+let spanMode = 'week';
+let spanAnchor = todayString();
 let undoAction = null;
 let toastTimer = null;
 let detailId = null;
@@ -109,7 +111,8 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let selectedDate = todayString();
 let popupDate = null;
-const collapsedDates = new Set();
+// 날짜 묶음을 접고 펴는 것을 사용자가 정한 경우만 기억한다(정하지 않은 날짜는 지난 날짜만 접혀 있다)
+const foldChoices = new Map();
 
 /* 날짜: 날짜 글자('2026-10-29')를 보기 좋은 글과 색으로 바꾼다 */
 function todayString() {
@@ -748,41 +751,87 @@ function renderPopup() {
   popupOpen.textContent = more > 0 ? '이 날짜 할 일 보기 (' + more + '개 더)' : '이 날짜 할 일 보기';
 }
 
+// 날짜별 목록에서 보여 줄 날짜들(한주: 일요일~토요일 7일, 한달: 그 달 전체)
+function spanDates() {
+  const anchor = parseDue(spanAnchor);
+  let first;
+  let length;
+  if (spanMode === 'week') {
+    const weekday = new Date(anchor.year, anchor.month - 1, anchor.day).getDay();
+    first = addDays(spanAnchor, -weekday);
+    length = 7;
+  } else {
+    first = dueString(anchor.year, anchor.month - 1, 1);
+    length = new Date(anchor.year, anchor.month, 0).getDate();
+  }
+  const dates = [];
+  for (let i = 0; i < length; i++) dates.push(addDays(first, i));
+  return dates;
+}
+
+function moveSpan(step) {
+  if (spanMode === 'week') {
+    spanAnchor = addDays(spanAnchor, step * 7);
+  } else {
+    const p = parseDue(spanAnchor);
+    const moved = new Date(p.year, p.month - 1 + step, 1);
+    spanAnchor = dueString(moved.getFullYear(), moved.getMonth(), 1);
+  }
+  render();
+}
+
+function isFolded(due) {
+  return foldChoices.has(due) ? foldChoices.get(due) : due < todayString();
+}
+
 function renderDaysTab() {
   const word = query.trim().toLowerCase();
-  const today = todayString();
-  const matches = todos.filter(function (t) {
-    if (range === 'upcoming' && t.due < today) return false;
-    return !word || t.text.toLowerCase().includes(word);
-  });
+  const dates = spanDates();
 
-  const dates = [];
-  matches.forEach(function (t) {
-    if (!dates.includes(t.due)) dates.push(t.due);
+  spanButtons.forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.span === spanMode));
   });
-  dates.sort();
+  if (spanMode === 'week') {
+    const last = parseDue(dates[6]);
+    const first = parseDue(dates[0]);
+    spanLabel.textContent = first.month + '월 ' + first.day + '일 ~ ' + last.month + '월 ' + last.day + '일';
+  } else {
+    const p = parseDue(dates[0]);
+    spanLabel.textContent = p.year + '년 ' + p.month + '월';
+  }
 
+  let shownCount = 0;
   daysList.replaceChildren(...dates.map(function (due) {
-    const items = orderTodos(matches.filter(function (t) { return t.due === due; }));
+    const items = orderTodos(todos.filter(function (t) {
+      return t.due === due && (!word || t.text.toLowerCase().includes(word));
+    }));
+    // 찾는 중에는 맞는 할 일이 있는 날짜만 보인다
+    if (word && items.length === 0) return null;
+    shownCount += 1;
 
     const group = document.createElement('div');
     group.className = 'day-group';
 
     // 제목 줄: 왼쪽 부분을 누르면 접고 펴고, 오른쪽 "보기 ›"를 누르면 그 날짜의 할 일 탭으로 간다
-    const folded = collapsedDates.has(due);
+    const folded = isFolded(due);
     const head = document.createElement('div');
-    head.className = 'day-head';
+    head.className = 'day-head' + (items.length === 0 ? ' empty-day' : '');
+    head.dataset.date = due;
     head.style.setProperty('--date-color', dateColor(due));
 
     const toggle = makeButton('', 'day-toggle', function () {
-      if (collapsedDates.has(due)) collapsedDates.delete(due);
-      else collapsedDates.add(due);
+      foldChoices.set(due, !isFolded(due));
       render();
     });
-    toggle.setAttribute('aria-expanded', String(!folded));
     const arrow = document.createElement('span');
     arrow.className = 'arrow';
-    arrow.textContent = folded ? '▸' : '▾';
+    if (items.length === 0) {
+      toggle.disabled = true;
+      arrow.textContent = '·';
+    } else {
+      toggle.setAttribute('aria-expanded', String(!folded));
+      arrow.textContent = folded ? '▸' : '▾';
+    }
     const title = document.createElement('span');
     title.textContent = dateText(due) + ' · ' + ddayText(due);
     const total = document.createElement('span');
@@ -795,26 +844,16 @@ function renderDaysTab() {
     head.append(toggle, go);
 
     group.append(head);
-    if (!folded) {
+    if (items.length > 0 && !folded) {
       const itemList = document.createElement('ul');
       itemList.append(...items.map(function (t) { return makeItem(t); }));
       group.append(itemList);
     }
     return group;
-  }));
+  }).filter(Boolean));
 
-  if (todos.length === 0) {
-    daysEmpty.textContent = '아직 할 일이 없어요';
-  } else if (word) {
-    daysEmpty.textContent = '검색 결과가 없어요';
-  } else {
-    daysEmpty.textContent = '오늘부터 할 일이 없어요';
-  }
-  daysEmpty.hidden = matches.length > 0;
-
-  rangeButtons.forEach(function (b) {
-    b.setAttribute('aria-pressed', String(b.dataset.range === range));
-  });
+  daysEmpty.textContent = '검색 결과가 없어요';
+  daysEmpty.hidden = shownCount > 0;
   sampleButton.textContent = hasSamples() ? '🧪 테스트 할 일 지우기' : '🧪 테스트 할 일 20개 넣기';
 }
 
@@ -919,11 +958,17 @@ filterButtons.forEach(function (b) {
   });
 });
 sampleButton.addEventListener('click', toggleSamples);
-rangeButtons.forEach(function (b) {
+spanButtons.forEach(function (b) {
   b.addEventListener('click', function () {
-    range = b.dataset.range;
+    spanMode = b.dataset.span;
     render();
   });
+});
+byId('span-prev').addEventListener('click', function () { moveSpan(-1); });
+byId('span-next').addEventListener('click', function () { moveSpan(1); });
+byId('span-today').addEventListener('click', function () {
+  spanAnchor = todayString();
+  render();
 });
 clearButton.addEventListener('click', clearDone);
 tabButtons.forEach(function (b) {
